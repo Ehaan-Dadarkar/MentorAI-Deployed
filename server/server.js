@@ -21,7 +21,7 @@ const dashboardRoutes = require("./routes/dashboard");
 const knowledgeGraphRoutes = require("./routes/knowledge-graph");
 const settingsRoutes = require("./routes/settings");
 const { requestLogger, errorLogger } = require("./middleware/logger");
-const { globalLimiter, authLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
+const { globalLimiter, loginLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
 const User = require("./models/User");
 
 const app = express();
@@ -73,11 +73,8 @@ const allowedOrigins = [
 
 // Middleware
 app.use(helmet());
-// Apply global rate limiter but skip auth/me (called on every page load)
-app.use((req, res, next) => {
-  if (req.path === '/api/auth/me') return next();
-  return globalLimiter(req, res, next);
-});
+// Global limiter - skip handled inside the limiter (e.g. /api/auth/me)
+app.use(globalLimiter);
 app.use(rateLimitInfoMiddleware);
 app.use(
   cors({
@@ -104,8 +101,8 @@ app.use(requestLogger);
 
 // API Routes
 // Auth limiter only on login/register, not on /me or /logout
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/register', loginLimiter);
 app.use('/api/auth', authRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/flashcards", flashcardRoutes);

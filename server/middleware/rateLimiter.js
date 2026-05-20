@@ -1,92 +1,77 @@
-const rateLimit = require("express-rate-limit");
-const MongoStore = require("rate-limit-mongo");
+const rateLimit = require('express-rate-limit');
 
-// ─── MongoDB Store Factory ───────────────────────────────────────────────
-// Creates MongoDB-backed stores for persistence; falls back to memory on error
-const makeMongoStore = (expireMs) => {
-  try {
-    return new MongoStore({
-      uri: process.env.MONGODB_URI || process.env.MONGO_URI,
-      collectionName: 'rateLimits',
-      expireTimeMs: expireMs,
-      errorHandler: (err) => {
-        console.error('[RateLimit] MongoDB store error:', err.message);
-      }
-    });
-  } catch (err) {
-    console.warn('[RateLimit] MongoDB store failed, using memory store:', err.message);
-    return undefined; // falls back to memory store
-  }
+// ─── KEY GENERATOR ────────────────────────────────────────────────────────
+// Uses real IP from proxy headers, falls back to req.ip
+const getKey = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.ip || 'unknown';
 };
 
-// ─── TIER 1: Global limiter (applies to ALL routes) ──────────────────────
-// 100 requests per 15 minutes per IP
+// ─── TIER 1: Global limiter ───────────────────────────────────────────────
+// Applies to ALL routes - very generous limit
+// 1000 requests per 15 minutes per IP
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
-  store: makeMongoStore(15 * 60 * 1000),
+  max: 1000,
+  keyGenerator: getKey,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
-      || req.headers['x-real-ip'] 
-      || req.ip 
-      || 'unknown';
+  skip: (req) => {
+    // Never rate limit health checks or auth/me
+    return req.path === '/api/auth/me' || req.path === '/api/health';
   },
   message: {
     success: false,
-    error: 'Too many requests. Please wait 15 minutes before trying again.',
+    error: 'Too many requests. Please slow down.',
   },
 });
 
-// ─── TIER 2: Auth limiter (login/register) ────────────────────────────────
-// 10 attempts per 15 minutes per IP (prevent brute force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
+// ─── TIER 2: Login limiter ────────────────────────────────────────────────
+// ONLY counts failed attempts (skipSuccessfulRequests: true)
+// 30 FAILED attempts per hour per IP before blocking
+const loginLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyGenerator: getKey,
   skipSuccessfulRequests: true,
-  store: makeMongoStore(15 * 60 * 1000),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
-      || req.headers['x-real-ip'] 
-      || req.ip 
-      || 'unknown';
-  },
   message: {
     success: false,
-    error: 'Too many login attempts. Please wait 15 minutes.',
+    error: 'Too many failed login attempts. Please try again in 1 hour.',
   },
 });
 
-// ─── TIER 3: AI limiter for users WITHOUT their own API key ──────────────
-// 10 AI requests per hour (heavy restriction on test/demo users)
+// ─── TIER 3: AI limiter (strict - no personal key) ───────────────────────
+// 20 AI requests per hour for users without their own API key
 const aiLimiterStrict = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
-  store: makeMongoStore(60 * 60 * 1000),
+  max: 20,
+  keyGenerator: (req) => {
+    // Use user ID if authenticated, otherwise use IP
+    return req.user?.id || getKey(req);
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    error:
-      'AI request limit reached. Add your own OpenRouter API key in Settings to remove limits.',
+    error: 'AI request limit reached. Add your OpenRouter API key in Settings to remove limits.',
     addKeyPrompt: true,
   },
 });
 
-// ─── TIER 4: AI limiter for users WITH their own API key ─────────────────
-// 200 AI requests per hour (generous, they pay for it themselves)
+// ─── TIER 4: AI limiter (relaxed - has personal key) ─────────────────────
+// 500 AI requests per hour for users with their own API key
 const aiLimiterRelaxed = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 200,
-  store: makeMongoStore(60 * 60 * 1000),
+  max: 500,
+  keyGenerator: (req) => req.user?.id || getKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    error: 'You have reached 200 AI requests per hour.',
+    error: 'You have reached 500 AI requests per hour.',
   },
 });
 
@@ -95,63 +80,50 @@ const aiLimiterRelaxed = rateLimit({
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  store: makeMongoStore(60 * 60 * 1000),
+  keyGenerator: (req) => req.user?.id || getKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    error: 'Demo account limit reached. Register a free account or add your own API key.',
+    error: 'Demo account AI limit reached. Register free to get more requests.',
     isDemo: true,
   },
 });
 
-// ─── Dynamic AI limiter middleware ───────────────────────────────────────
-// This is the SMART middleware that decides which limiter to apply
+// ─── SMART AI LIMITER ─────────────────────────────────────────────────────
+// Picks the right limiter based on user type
 const dynamicAiLimiter = (req, res, next) => {
-  // If demo account → strictest limits
-  if (req.user && req.user.email === 'demo@mentorai.app') {
+  if (req.user?.email === 'demo@mentorai.app') {
     return demoLimiter(req, res, next);
   }
-
-  // If user has their own API key → relaxed limits
-  if (req.user && req.user.openrouterApiKey) {
+  if (req.user?.openrouterApiKey) {
     return aiLimiterRelaxed(req, res, next);
   }
-
-  // Default → strict limits
   return aiLimiterStrict(req, res, next);
 };
 
-// Middleware to expose rate limit info to responses
+// ─── RATE LIMIT HEADER HELPER ─────────────────────────────────────────────
 const rateLimitInfoMiddleware = (req, res, next) => {
-  // Attach a helper to res so routes can send rate limit info when desired
   res.setRateLimitHeaders = () => {
     try {
       const rl = req.rateLimit;
       if (!rl) return;
-
-      // Standard headers
       if (rl.limit != null) res.setHeader('X-RateLimit-Limit', String(rl.limit));
       if (rl.remaining != null) res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
-
-      // Try to provide a reset timestamp (in seconds)
       if (rl.resetTime) {
-        const resetTs = new Date(rl.resetTime).getTime();
-        if (!Number.isNaN(resetTs)) {
-          res.setHeader('X-RateLimit-Reset', String(Math.floor(resetTs / 1000)));
-        }
+        const ts = new Date(rl.resetTime).getTime();
+        if (!Number.isNaN(ts)) res.setHeader('X-RateLimit-Reset', String(Math.floor(ts / 1000)));
       }
     } catch (e) {
-      // Non-fatal: don't break response if headers fail
+      // non-fatal
     }
   };
-
   next();
 };
 
 module.exports = {
   globalLimiter,
-  authLimiter,
+  loginLimiter,
   aiLimiterStrict,
   aiLimiterRelaxed,
   demoLimiter,

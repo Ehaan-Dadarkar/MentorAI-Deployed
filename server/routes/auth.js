@@ -5,7 +5,7 @@ const { z } = require("zod");
 const User = require("../models/User");
 const validate = require("../middleware/validate");
 const auth = require("../middleware/auth");
-const { authLimiter } = require("../middleware/rateLimit");
+const { loginLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -36,7 +36,7 @@ const setTokenCookie = (res, token) => {
 // POST /api/auth/register
 router.post(
   "/register",
-  authLimiter,
+  loginLimiter,
   validate(signupSchema),
   async (req, res, next) => {
     try {
@@ -79,7 +79,7 @@ router.post(
 // POST /api/auth/login
 router.post(
   "/login",
-  authLimiter,
+  loginLimiter,
   validate(loginSchema),
   async (req, res, next) => {
     try {
