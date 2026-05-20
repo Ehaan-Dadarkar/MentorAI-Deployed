@@ -192,7 +192,7 @@ function uploadPdfMiddleware(req, res, next) {
 
     if (error instanceof multer.MulterError) {
       if (error.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({ error: "PDF file size must be 10MB or less" });
+        return res.status(400).json({ error: "PDF file size must be 50MB or less" });
       }
       return res.status(400).json({ error: error.message });
     }
@@ -228,6 +228,10 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
       return res.status(400).json({ error: "Could not extract text from PDF" });
     }
 
+    // Limit the text sent to AI to reduce processing time.
+    // The full extracted text stays available in this request for downstream use.
+    const textForAI = text.substring(0, 3000);
+
     const promptMessages = [
       {
         role: "system",
@@ -243,16 +247,22 @@ Return only valid JSON.`,
       },
       {
         role: "user",
-        content: text,
+        content: textForAI,
       },
     ];
 
     let structuredRaw;
     try {
-      structuredRaw = await callOpenRouter(promptMessages, {
-        temperature: 0.2,
-        apiKey: req.user?.openrouterApiKey,
-      });
+      structuredRaw = await Promise.race([
+        callOpenRouter(promptMessages, {
+          model: "meta-llama/llama-3.1-8b-instruct",
+          temperature: 0.3,
+          apiKey: req.user?.openrouterApiKey,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("AI processing timeout")), 60000),
+        ),
+      ]);
     } catch {
       return res.status(502).json({ error: "AI service failed to process PDF content" });
     }

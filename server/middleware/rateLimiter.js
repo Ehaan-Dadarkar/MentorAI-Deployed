@@ -1,11 +1,13 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 // ─── KEY GENERATOR ────────────────────────────────────────────────────────
 // Uses real IP from proxy headers, falls back to req.ip
 const getKey = (req) => {
   const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.headers['x-real-ip'] || req.ip || 'unknown';
+  const rawIp = forwarded
+    ? forwarded.split(',')[0].trim()
+    : req.headers['x-real-ip'] || req.ip || 'unknown';
+  return ipKeyGenerator(rawIp);
 };
 
 // ─── TIER 1: Global limiter ───────────────────────────────────────────────
@@ -50,7 +52,8 @@ const aiLimiterStrict = rateLimit({
   max: 20,
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise use IP
-    return req.user?.id || getKey(req);
+    if (req.user?.id) return req.user.id;
+    return getKey(req);
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -66,7 +69,10 @@ const aiLimiterStrict = rateLimit({
 const aiLimiterRelaxed = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 500,
-  keyGenerator: (req) => req.user?.id || getKey(req),
+  keyGenerator: (req) => {
+    if (req.user?.id) return req.user.id;
+    return getKey(req);
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -80,7 +86,10 @@ const aiLimiterRelaxed = rateLimit({
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => req.user?.id || getKey(req),
+  keyGenerator: (req) => {
+    if (req.user?.id) return req.user.id;
+    return getKey(req);
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: {
