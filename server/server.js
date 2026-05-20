@@ -67,7 +67,9 @@ async function ensureDemoAccount() {
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  process.env.CLIENT_URL,
   'https://mentorai.vercel.app',
+  'https://mentorai-prod.vercel.app',
   /\.vercel\.app$/
 ];
 

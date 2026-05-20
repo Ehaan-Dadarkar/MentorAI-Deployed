@@ -49,8 +49,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: Boolean(data.user),
         isLoading: false,
       });
-    } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+    } catch (error: any) {
+      // Only clear the user if the server explicitly says the token is invalid (401).
+      if (error?.response?.status === 401) {
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      } else {
+        // For network/CORS/timeout errors, keep current user state but mark loading complete.
+        set({ isLoading: false });
+      }
     }
   },
 
