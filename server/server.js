@@ -25,6 +25,9 @@ const { globalLimiter, authLimiter, rateLimitInfoMiddleware } = require("./middl
 const User = require("./models/User");
 
 const app = express();
+// Trust proxy headers from Vercel/Render
+// This ensures we get the real user IP, not Vercel's proxy IP
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const DEMO_EMAIL = process.env.DEMO_EMAIL || "demo@mentorai.app";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo@1234";
@@ -70,7 +73,11 @@ const allowedOrigins = [
 
 // Middleware
 app.use(helmet());
-app.use(globalLimiter);
+// Apply global rate limiter but skip auth/me (called on every page load)
+app.use((req, res, next) => {
+  if (req.path === '/api/auth/me') return next();
+  return globalLimiter(req, res, next);
+});
 app.use(rateLimitInfoMiddleware);
 app.use(
   cors({
@@ -96,7 +103,10 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 // API Routes
-app.use("/api/auth", authLimiter, authRoutes);
+// Auth limiter only on login/register, not on /me or /logout
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth', authRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/flashcards", flashcardRoutes);
 app.use("/api/quiz", quizRoutes);

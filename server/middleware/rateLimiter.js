@@ -6,7 +6,7 @@ const MongoStore = require("rate-limit-mongo");
 const makeMongoStore = (expireMs) => {
   try {
     return new MongoStore({
-      uri: process.env.MONGO_URI,
+      uri: process.env.MONGODB_URI || process.env.MONGO_URI,
       collectionName: 'rateLimits',
       expireTimeMs: expireMs,
       errorHandler: (err) => {
@@ -23,10 +23,16 @@ const makeMongoStore = (expireMs) => {
 // 100 requests per 15 minutes per IP
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   store: makeMongoStore(15 * 60 * 1000),
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+      || req.headers['x-real-ip'] 
+      || req.ip 
+      || 'unknown';
+  },
   message: {
     success: false,
     error: 'Too many requests. Please wait 15 minutes before trying again.',
@@ -37,10 +43,17 @@ const globalLimiter = rateLimit({
 // 10 attempts per 15 minutes per IP (prevent brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
+  skipSuccessfulRequests: true,
   store: makeMongoStore(15 * 60 * 1000),
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+      || req.headers['x-real-ip'] 
+      || req.ip 
+      || 'unknown';
+  },
   message: {
     success: false,
     error: 'Too many login attempts. Please wait 15 minutes.',
