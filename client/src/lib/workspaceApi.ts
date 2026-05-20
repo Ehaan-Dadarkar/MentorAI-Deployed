@@ -63,6 +63,7 @@ export async function uploadPdfNote(file: File) {
 
   const { data } = await api.post<{ note: Note }>("/upload/pdf", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000, // 3 minutes - allow time for AI processing
   });
 
   return data.note;

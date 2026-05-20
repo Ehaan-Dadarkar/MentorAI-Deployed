@@ -12,7 +12,7 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   fileFilter: (_req, file, cb) => {
     const looksLikePdf =
       file.mimetype === "application/pdf" ||
@@ -208,6 +208,9 @@ function uploadPdfMiddleware(req, res, next) {
 // POST /api/upload/pdf
 router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res, next) => {
   try {
+    // Allow longer request/response socket timeout for AI processing (3 minutes)
+    try { req.setTimeout(180000); } catch (e) {}
+    try { res.setTimeout(180000); } catch (e) {}
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
