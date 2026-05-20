@@ -477,9 +477,7 @@ export function Sidebar() {
       </div>
 
       {/* ─────────────────────────────────────────────────────────
-          MOBILE BOTTOM NAV
-          Android-safe: outer flex-1 justify-start,
-          inner div carries icon + label left-aligned.
+          MOBILE BOTTOM NAV  ← CENTERED
       ───────────────────────────────────────────────────────── */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A0A0A] border-t border-[#262626] flex items-stretch h-16"
@@ -491,10 +489,11 @@ export function Sidebar() {
               <button
                 key="more"
                 onClick={() => setMobileDrawerOpen(true)}
-                // ↓ outer: flex-1 justify-start; inner div left-aligns on Android
-                className="flex flex-1 items-center justify-start"
+                // ↓ CHANGED: justify-center so the inner column sits in the middle
+                className="flex flex-1 items-center justify-center"
               >
-                <div className="flex flex-col items-start gap-[3px] pl-3 w-full text-[#737373] hover:text-[#FAFAFA] transition-colors">
+                {/* ↓ CHANGED: items-center removes left-align; no pl-3 / w-full needed */}
+                <div className="flex flex-col items-center gap-[3px] text-[#737373] hover:text-[#FAFAFA] transition-colors">
                   <item.icon className="w-5 h-5" />
                   <span className="text-[9px] font-bold tracking-wider uppercase leading-none">
                     {item.label}
@@ -513,18 +512,18 @@ export function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              // ↓ outer: flex-1 justify-start; inner div left-aligns on Android
+              // ↓ CHANGED: justify-center so content sits in the middle of each cell
               className={cn(
-                "relative flex flex-1 items-center justify-start transition-colors",
+                "relative flex flex-1 items-center justify-center transition-colors",
                 isActive ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
               )}
             >
-              {/* ↓ active bar spans the padded content width */}
+              {/* ↓ active bar now spans the full cell width */}
               {isActive && (
-                <span className="absolute top-0 left-3 right-3 h-[2px] bg-[#FF3D00]" />
+                <span className="absolute top-0 left-0 right-0 h-[2px] bg-[#FF3D00]" />
               )}
-              {/* ↓ inner div is what forces left-align reliably on Android Chrome */}
-              <div className="flex flex-col items-start gap-[3px] pl-3 w-full">
+              {/* ↓ CHANGED: items-center for vertical + horizontal centering; no pl-3 / w-full */}
+              <div className="flex flex-col items-center gap-[3px]">
                 <item.icon className="w-5 h-5" />
                 <span className="text-[9px] font-bold tracking-wider uppercase leading-none">
                   {item.label}
@@ -537,8 +536,6 @@ export function Sidebar() {
 
       {/* ─────────────────────────────────────────────────────────
           MOBILE FULL DRAWER
-          Android-safe: inner div with flex items-center gap-3
-          carries icon + label left-aligned reliably.
       ───────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileDrawerOpen && (
@@ -601,7 +598,6 @@ export function Sidebar() {
                       {isActive && (
                         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF3D00]" />
                       )}
-                      {/* ↓ inner div forces left-align reliably on Android */}
                       <div className="flex items-center gap-3 w-full">
                         <item.icon className="w-4 h-4 shrink-0" />
                         <span className="text-left leading-none">{item.label}</span>
