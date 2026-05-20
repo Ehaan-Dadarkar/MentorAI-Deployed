@@ -1,11 +1,11 @@
 const express = require('express');
 const User = require('../models/User');
-const { authenticate } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
 // GET current API key status (masked)
-router.get('/api-key', authenticate, async (req, res) => {
+router.get('/api-key', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('+openrouterApiKey');
 
@@ -24,7 +24,7 @@ router.get('/api-key', authenticate, async (req, res) => {
 });
 
 // SAVE / UPDATE API key
-router.post('/api-key', authenticate, async (req, res) => {
+router.post('/api-key', auth, async (req, res) => {
   try {
     const { apiKey } = req.body;
 
@@ -50,7 +50,7 @@ router.post('/api-key', authenticate, async (req, res) => {
 });
 
 // DELETE API key
-router.delete('/api-key', authenticate, async (req, res) => {
+router.delete('/api-key', auth, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user.id, { openrouterApiKey: null });
 

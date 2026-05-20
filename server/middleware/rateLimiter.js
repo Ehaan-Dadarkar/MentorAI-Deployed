@@ -1,11 +1,11 @@
 const rateLimit = require("express-rate-limit");
-const { RateLimitMongoStore } = require("rate-limit-mongo");
+const MongoStore = require("rate-limit-mongo");
 
 // ─── MongoDB Store Factory ───────────────────────────────────────────────
 // Creates MongoDB-backed stores for persistence; falls back to memory on error
 const makeMongoStore = (expireMs) => {
   try {
-    return new RateLimitMongoStore({
+    return new MongoStore({
       uri: process.env.MONGO_URI,
       collectionName: 'rateLimits',
       expireTimeMs: expireMs,
