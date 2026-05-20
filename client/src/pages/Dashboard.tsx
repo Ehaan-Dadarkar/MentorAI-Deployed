@@ -199,12 +199,7 @@ export default function Dashboard() {
     load("/dashboard/stats", "stats", setStats, setStatsLoading);
     load("/dashboard/chart", "chart", setChart, setChartLoading);
     load("/dashboard/weak-topics", "weakTopics", setWeakTopics, setWeakLoading);
-    load(
-      "/dashboard/focus-topics",
-      "focusTopics",
-      setFocusTopics,
-      setFocusLoading,
-    );
+    load("/dashboard/focus-topics", "focusTopics", setFocusTopics, setFocusLoading);
     load("/dashboard/activity", "activity", setActivity, setActivityLoading);
   }, []);
 
@@ -238,16 +233,16 @@ export default function Dashboard() {
         }}
       />
 
-      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12 lg:px-16 py-20 lg:py-32">
+      <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 lg:py-20">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-28 lg:space-y-10"
+          className="space-y-12 sm:space-y-16 lg:space-y-20"
         >
           {/* ── HERO ── */}
           <motion.div variants={itemVariants} className="max-w-4xl">
-            <h1 className="font-['Inter_Tight'] text-6xl md:text-8xl lg:text-[10rem] tracking-[-0.06em] font-medium leading-[0.85] mb-12 uppercase text-[#FAFAFA] mix-blend-difference">
+            <h1 className="font-['Inter_Tight'] text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] tracking-[-0.06em] font-medium leading-[0.85] mb-6 sm:mb-10 md:mb-12 uppercase text-[#FAFAFA] mix-blend-difference">
               {greeting},<br />
               <span className="text-[#737373]">{firstName}.</span>
             </h1>
@@ -262,43 +257,47 @@ export default function Dashboard() {
               <SectionSkeleton height="h-32" />
             ) : stats ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#262626]">
-                <div className="py-8 lg:py-12 lg:pr-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-4 lg:mb-12">
+                {/* Streak */}
+                <div className="py-6 sm:py-8 lg:py-12 lg:pr-8 flex flex-col justify-between">
+                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Study Streak
                   </p>
-                  <p className="font-['Inter_Tight'] text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.streak} />
-                    <span className="text-2xl text-[#737373] tracking-normal ml-1">
+                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal ml-1">
                       D
                     </span>
                   </p>
                 </div>
-                <div className="py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-4 lg:mb-12">
+                {/* Accuracy */}
+                <div className="py-6 sm:py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
+                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Accuracy
                   </p>
-                  <p className="font-['Inter_Tight'] text-5xl md:text-7xl tracking-tighter leading-none text-[#FF3D00]">
+                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none text-[#FF3D00]">
                     <AnimatedNumber value={stats.avgQuizScore} />
-                    <span className="text-2xl text-[#737373] tracking-normal">
+                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal">
                       %
                     </span>
                   </p>
                 </div>
-                <div className="py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-4 lg:mb-12">
+                {/* Mastered */}
+                <div className="py-6 sm:py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
+                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Mastered
                   </p>
-                  <p className="font-['Inter_Tight'] text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.cardsMastered} />
                   </p>
                 </div>
-                <div className="py-8 lg:py-12 lg:pl-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-4 lg:mb-12">
+                {/* Time */}
+                <div className="py-6 sm:py-8 lg:py-12 lg:pl-8 flex flex-col justify-between">
+                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Time Invested
                   </p>
-                  <p className="font-['Inter_Tight'] text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.totalStudyMinutes} />
-                    <span className="text-2xl text-[#737373] tracking-normal ml-1">
+                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal ml-1">
                       M
                     </span>
                   </p>
@@ -307,22 +306,23 @@ export default function Dashboard() {
             ) : null}
           </motion.div>
 
-          {/* ── ASYMMETRIC GRID: MASTERY CHART & FOCUS ── */}
+          {/* ── CHART & GAPS ── */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24"
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 lg:gap-24"
           >
             {/* Chart */}
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
-              <div className="border-b border-[#262626] pb-6 mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase">
+              <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
+                <h2 className="font-['Inter_Tight'] text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase">
                   Volume
                 </h2>
                 <p className="text-[#737373] text-xs font-mono tracking-[0.1em]">
                   LAST 7 DAYS
                 </p>
               </div>
-              <div className="flex-1 min-h-[300px] w-full">
+              {/* Fixed height on mobile, flex on desktop */}
+              <div className="h-[240px] sm:h-[280px] md:h-[300px] lg:flex-1 lg:min-h-[300px] w-full">
                 {chartLoading ? (
                   <SectionSkeleton height="h-full" />
                 ) : chart && chart.some((p) => p.minutes > 0) ? (
@@ -331,7 +331,7 @@ export default function Dashboard() {
                       <XAxis
                         dataKey="day"
                         stroke="#737373"
-                        fontSize={12}
+                        fontSize={11}
                         tickLine={false}
                         axisLine={false}
                         dy={16}
@@ -340,10 +340,10 @@ export default function Dashboard() {
                       />
                       <YAxis
                         stroke="#737373"
-                        fontSize={12}
+                        fontSize={11}
                         tickLine={false}
                         axisLine={false}
-                        width={40}
+                        width={36}
                         dx={-8}
                         fontFamily="'JetBrains Mono', monospace"
                       />
@@ -396,8 +396,8 @@ export default function Dashboard() {
 
             {/* Knowledge Gaps */}
             <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
-              <div className="border-b border-[#262626] pb-6 mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase text-[#FF3D00]">
+              <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
+                <h2 className="font-['Inter_Tight'] text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase text-[#FF3D00]">
                   Gaps
                 </h2>
                 <p className="text-[#737373] text-xs font-mono tracking-[0.1em] uppercase">
@@ -406,15 +406,15 @@ export default function Dashboard() {
               </div>
               <div className="space-y-0 flex-1">
                 {weakLoading ? (
-                  <SectionSkeleton height="h-full" />
+                  <SectionSkeleton height="h-48" />
                 ) : weakTopics && weakTopics.length > 0 ? (
                   weakTopics.slice(0, 5).map((wt, i) => (
                     <div
                       key={i}
-                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-5 border-b border-[#262626] last:border-none transition-colors hover:bg-[#1A1A1A] px-2 -mx-2"
+                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 sm:py-5 border-b border-[#262626] last:border-none transition-colors hover:bg-[#1A1A1A] px-2 -mx-2"
                     >
                       <div className="min-w-0">
-                        <p className="font-['Inter_Tight'] text-xl md:text-2xl tracking-[-0.04em] leading-snug truncate mb-1">
+                        <p className="font-['Inter_Tight'] text-lg sm:text-xl md:text-2xl tracking-[-0.04em] leading-snug truncate mb-1">
                           {wt.topic}
                         </p>
                         <p className="text-xs font-mono uppercase text-[#FF3D00] tracking-wider">
@@ -423,9 +423,7 @@ export default function Dashboard() {
                       </div>
                       <GhostButton
                         onClick={() =>
-                          navigate(
-                            `/tutor?topic=${encodeURIComponent(wt.topic)}`,
-                          )
+                          navigate(`/tutor?topic=${encodeURIComponent(wt.topic)}`)
                         }
                         className="text-xs shrink-0 self-start sm:self-auto"
                       >
@@ -444,15 +442,15 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* ── ASYMMETRIC GRID: RECENT ACTIVITY & QUICK ACTIONS ── */}
+          {/* ── ACTIVITY & QUICK ACTIONS ── */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 pb-20"
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 lg:gap-24 pb-8 sm:pb-12 lg:pb-20"
           >
             {/* Recent Activity */}
             <div className="lg:col-span-5 xl:col-span-4">
-              <div className="border-b border-[#262626] pb-6 mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-3xl md:text-4xl tracking-[-0.04em] leading-none uppercase">
+              <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
+                <h2 className="font-['Inter_Tight'] text-2xl sm:text-3xl md:text-4xl tracking-[-0.04em] leading-none uppercase">
                   Activity
                 </h2>
                 <p className="text-[#737373] text-xs font-mono tracking-widest uppercase">
@@ -460,20 +458,20 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {activityLoading ? (
                   <SectionSkeleton height="h-64" />
                 ) : activity && activity.length > 0 ? (
                   activity.slice(0, 5).map((act, i) => (
                     <div
                       key={act.id || i}
-                      className="flex gap-4 group items-start"
+                      className="flex gap-3 sm:gap-4 group items-start"
                     >
-                      <div className="w-10 h-10 mt-1 shrink-0 bg-[#1A1A1A] text-[#737373] group-hover:text-[#FF3D00] group-hover:bg-[#FF3D00]/10 flex items-center justify-center transition-colors">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 mt-1 shrink-0 bg-[#1A1A1A] text-[#737373] group-hover:text-[#FF3D00] group-hover:bg-[#FF3D00]/10 flex items-center justify-center transition-colors">
                         <ActivityIcon type={act.type} />
                       </div>
-                      <div className="flex-1 min-w-0 border-b border-[#262626] pb-6">
-                        <p className="text-lg md:text-xl font-['Inter_Tight'] tracking-tight mb-2 text-[#FAFAFA]">
+                      <div className="flex-1 min-w-0 border-b border-[#262626] pb-4 sm:pb-6">
+                        <p className="text-base sm:text-lg md:text-xl font-['Inter_Tight'] tracking-tight mb-1 sm:mb-2 text-[#FAFAFA]">
                           {act.description}
                         </p>
                         <p className="text-xs font-mono text-[#737373] uppercase tracking-[0.1em]">
@@ -492,9 +490,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Quick Actions (Large Typographic Menu) */}
+            {/* Quick Actions */}
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-end">
-              <div className="flex flex-col mt-auto pt-4 md:pt-12">
+              <div className="flex flex-col mt-auto pt-2 sm:pt-6 md:pt-12">
                 {[
                   { title: "Ask AI Tutor", dest: "/tutor" },
                   { title: "Study Flashcards", dest: "/flashcards" },
@@ -504,13 +502,13 @@ export default function Dashboard() {
                   <button
                     key={idx}
                     onClick={() => navigate(action.dest)}
-                    className="group flex items-center justify-between py-6 md:py-8 border-b border-[#262626] text-left w-full border-t first:border-t-[#262626]"
+                    className="group flex items-center justify-between py-4 sm:py-6 md:py-8 border-b border-[#262626] text-left w-full border-t first:border-t-[#262626]"
                   >
-                    <span className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-[-0.06em] text-[#737373] group-hover:text-[#FF3D00] transition-colors duration-200 uppercase">
+                    <span className="font-['Inter_Tight'] text-3xl sm:text-4xl md:text-6xl lg:text-7xl tracking-[-0.06em] text-[#737373] group-hover:text-[#FF3D00] transition-colors duration-200 uppercase">
                       {action.title}
                     </span>
                     <ArrowRight
-                      className="w-6 h-6 md:w-10 md:h-10 text-[#262626] group-hover:text-[#FF3D00] transition-all duration-200 group-hover:translate-x-4"
+                      className="w-5 h-5 sm:w-6 sm:h-6 md:w-10 md:h-10 text-[#262626] group-hover:text-[#FF3D00] transition-all duration-200 group-hover:translate-x-2 md:group-hover:translate-x-4 shrink-0"
                       strokeWidth={1.5}
                     />
                   </button>

@@ -1,37 +1,25 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import ApiKeySettings from "@/components/Settings/ApiKeySettings";
 import { useAuthStore } from "@/store/authStore";
-import { Save, Plus, X, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── Animation Config ─────────────────────
 const easing = [0.25, 0, 0, 1] as const;
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: easing },
-  },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: easing } },
 };
 
-// ── Button Components ─────────────────────
 const PrimaryButton = ({
-  children,
-  onClick,
-  className,
-  disabled,
+  children, onClick, className, disabled,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -45,63 +33,22 @@ const PrimaryButton = ({
     disabled={disabled}
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
-      "bg-transparent px-6 py-4",
+      "bg-transparent px-4 sm:px-6 py-3 sm:py-4",
       "text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase",
       "disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
-      className
+      className,
     )}
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
-    {/* Accent underline - grows on hover */}
     <motion.div
-      variants={{
-        initial: { scaleX: 0, originX: 0 },
-        hover: { scaleX: 1, originX: 0 },
-      }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
       transition={{ duration: 0.4, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-0.5 bg-[#FF3D00]"
     />
-    {/* Base line - shrinks on hover */}
     <motion.div
-      variants={{
-        initial: { scaleX: 1, originX: 1 },
-        hover: { scaleX: 0, originX: 1 },
-      }}
+      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
       transition={{ duration: 0.4, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-px bg-[#262626]"
-    />
-  </motion.button>
-);
-
-const GhostButton = ({
-  children,
-  onClick,
-  className,
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-  className?: string;
-}) => (
-  <motion.button
-    whileHover="hover"
-    initial="initial"
-    onClick={onClick}
-    className={cn(
-      "group relative inline-flex items-center gap-2 overflow-hidden",
-      "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase cursor-pointer",
-      "hover:text-[#FAFAFA] transition-colors",
-      className
-    )}
-  >
-    <span className="relative z-10 flex items-center gap-2">{children}</span>
-    <motion.div
-      variants={{
-        initial: { scaleX: 0, originX: 0 },
-        hover: { scaleX: 1, originX: 0 },
-      }}
-      transition={{ duration: 0.4, ease: easing }}
-      className="absolute inset-x-0 bottom-0 h-px bg-[#FAFAFA]"
     />
   </motion.button>
 );
@@ -118,20 +65,14 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
+    if (!user) return;
     setName(user.name || "");
     setStudyGoal(user.studyGoalMinutes || 60);
     setSubjects(user.subjects || []);
   }, [user]);
 
-  // Simulate loading state to use skeleton pattern
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -155,11 +96,7 @@ export default function Settings() {
         subjects: string[];
         studyGoalMinutes: number;
         openrouterApiKey?: string;
-      } = {
-        name,
-        subjects,
-        studyGoalMinutes: studyGoal,
-      };
+      } = { name, subjects, studyGoalMinutes: studyGoal };
 
       if (openrouterApiKey.trim()) {
         updates.openrouterApiKey = openrouterApiKey.trim();
@@ -169,7 +106,7 @@ export default function Settings() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // Error handled elsewhere
+      // handled elsewhere
     } finally {
       setIsSaving(false);
     }
@@ -177,90 +114,99 @@ export default function Settings() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-white pb-32">
-        {/* NOISE TEXTURE */}
+      <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-white pb-8 sm:pb-16 md:pb-32">
+        {/* NOISE */}
         <div
-          className="pointer-events-none fixed inset-0 opacity-[0.015] mix-blend-overlay z-50"
+          className="pointer-events-none fixed inset-0 opacity-[0.015] mix-blend-overlay z-30"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "repeat",
           }}
         />
 
-        {/* HERO SECTION */}
-        <div className="relative pt-32 pb-16 px-8 md:px-16 border-b border-[#262626]">
+        {/* ── HERO ── */}
+        <div className="relative pt-8 sm:pt-16 md:pt-32 pb-6 sm:pb-10 md:pb-16 px-4 sm:px-8 md:px-16 border-b border-[#262626]">
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             animate="show"
-            className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-12"
+            className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-6 sm:gap-12"
           >
             <div>
               <motion.h1
                 variants={fadeUp}
-                className="text-7xl md:text-8xl lg:text-[9rem] font-bold tracking-tighter leading-none"
+                className="text-4xl sm:text-6xl md:text-8xl lg:text-[9rem] font-bold tracking-tighter leading-none"
               >
                 SETTINGS.
               </motion.h1>
               <motion.div
                 variants={fadeUp}
-                className="mt-6 flex items-center gap-6"
+                className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6"
               >
-                <div className="h-1 w-12 bg-[#FF3D00]" />
-                <p className="text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
                   MANAGE PREFERENCES
                 </p>
               </motion.div>
             </div>
 
-            <motion.div
-              variants={fadeUp}
-              className="flex min-w-50 flex-col gap-4"
-            >
-              <PrimaryButton onClick={handleSave} disabled={isSaving || isLoading}>
-                {saved ? "SAVED SUCCESSFULLY" : isSaving ? "SAVING..." : "SAVE CHANGES"}
+            {/* Save button — full width on mobile */}
+            <motion.div variants={fadeUp} className="w-full sm:w-auto">
+              <PrimaryButton
+                onClick={handleSave}
+                disabled={isSaving || isLoading}
+                className="w-full sm:w-auto justify-center"
+              >
+                {saved
+                  ? "SAVED"
+                  : isSaving
+                    ? "SAVING..."
+                    : "SAVE CHANGES"}
                 {!saved && !isSaving && <ArrowRight className="w-4 h-4 ml-1" />}
               </PrimaryButton>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* MAIN CONTENT */}
-        <div className="max-w-7xl mx-auto px-8 md:px-16 py-16">
+        {/* ── CONTENT ── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16">
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24"
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-24"
           >
-            <motion.div variants={fadeUp} className="lg:col-span-8 space-y-16">
+            <motion.div
+              variants={fadeUp}
+              className="lg:col-span-8 space-y-10 sm:space-y-14 md:space-y-16"
+            >
               {isLoading ? (
-                // SKELETON
-                <div className="space-y-12 w-full">
+                <div className="space-y-8 sm:space-y-12 w-full">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="h-8 w-48 bg-[#1A1A1A] animate-pulse" />
                     <div className="h-px flex-1 bg-[#262626]" />
                   </div>
-                  <div className="space-y-8">
-                    <div className="h-24 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
-                    <div className="h-24 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
+                  <div className="space-y-6 sm:space-y-8">
+                    <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
+                    <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
+                    <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
                   </div>
                 </div>
               ) : (
                 <>
-                  {/* Profile Config */}
+                  {/* ── PROFILE ── */}
                   <section>
-                    <div className="flex items-center gap-4 mb-12">
-                      <h2 className="text-3xl font-bold tracking-tighter uppercase">
+                    <div className="flex items-center gap-4 mb-8 sm:mb-12">
+                      <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
                         PROFILE
                       </h2>
                       <div className="h-px flex-1 bg-[#262626]" />
-                      <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                      <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
                         01 ITEMS
                       </span>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-6 sm:space-y-8">
+                      {/* Name */}
                       <div>
                         <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
                           FULL NAME
@@ -272,6 +218,8 @@ export default function Settings() {
                           className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
                         />
                       </div>
+
+                      {/* Email (read-only) */}
                       <div>
                         <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
                           EMAIL ADDRESS
@@ -280,9 +228,11 @@ export default function Settings() {
                           value={user?.email || ""}
                           disabled
                           placeholder="EMAIL..."
-                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#737373] placeholder:text-[#262626] focus:outline-none opacity-50 cursor-not-allowed uppercase"
+                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#737373] focus:outline-none opacity-50 cursor-not-allowed uppercase"
                         />
                       </div>
+
+                      {/* OpenRouter key */}
                       <div>
                         <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
                           OPENROUTER API KEY
@@ -293,24 +243,104 @@ export default function Settings() {
                           type="password"
                           placeholder={
                             user?.hasOpenrouterApiKey
-                              ? "ENTER NEW KEY TO REPLACE SAVED KEY..."
-                              : "PASTE YOUR OPENROUTER API KEY..."
+                              ? "ENTER NEW KEY TO REPLACE..."
+                              : "PASTE YOUR OPENROUTER KEY..."
                           }
                           className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors"
                         />
                         <p className="mt-3 text-[10px] leading-5 tracking-[0.16em] text-[#737373] uppercase">
                           {user?.hasOpenrouterApiKey
-                            ? "A personal key is already saved. Leave this blank to keep it unchanged."
-                            : "Your key stays on the server and is used before the shared fallback."}
+                            ? "A key is saved. Leave blank to keep it."
+                            : "Your key is used before the shared fallback."}
                         </p>
+                      </div>
+
+                      {/* Study goal */}
+                      <div>
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                          DAILY STUDY GOAL (MINUTES)
+                        </label>
+                        <input
+                          type="number"
+                          value={studyGoal}
+                          onChange={(e) =>
+                            setStudyGoal(Math.max(1, parseInt(e.target.value) || 1))
+                          }
+                          min={1}
+                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors"
+                        />
+                      </div>
+
+                      {/* Subjects */}
+                      <div>
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                          SUBJECTS
+                        </label>
+
+                        {/* Subject tags */}
+                        {subjects.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {subjects.map((subject) => (
+                              <div
+                                key={subject}
+                                className="flex items-center gap-2 border border-[#262626] px-3 py-1.5"
+                              >
+                                <span className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase">
+                                  {subject}
+                                </span>
+                                <button
+                                  onClick={() => handleRemoveSubject(subject)}
+                                  className="text-[#737373] hover:text-[#FF3D00] transition-colors"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add subject */}
+                        <div className="flex gap-3 items-end">
+                          <input
+                            value={newSubject}
+                            onChange={(e) => setNewSubject(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddSubject();
+                              }
+                            }}
+                            placeholder="ADD SUBJECT..."
+                            className="flex-1 bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
+                          />
+                          <button
+                            onClick={handleAddSubject}
+                            disabled={!newSubject.trim()}
+                            className="border border-[#262626] px-4 py-2 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            ADD
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </section>
 
-                  {/* API Key Section */}
-                  <section className="mt-8">
+                  {/* ── API KEY SETTINGS ── */}
+                  <section>
                     <ApiKeySettings />
                   </section>
+
+                  {/* ── MOBILE SAVE BUTTON (bottom of form, easier reach) ── */}
+                  <div className="sm:hidden pt-4 border-t border-[#262626]">
+                    <PrimaryButton
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="w-full justify-center"
+                    >
+                      {saved ? "SAVED" : isSaving ? "SAVING..." : "SAVE CHANGES"}
+                      {!saved && !isSaving && <ArrowRight className="w-4 h-4 ml-1" />}
+                    </PrimaryButton>
+                  </div>
                 </>
               )}
             </motion.div>

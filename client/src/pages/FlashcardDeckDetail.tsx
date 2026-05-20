@@ -23,7 +23,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: easing } },
 };
 
-// ── UI Primitives (Strict Component Match) ──────────────────
+// ── UI Primitives ───────────────────────────────────────────
 
 const PrimaryButton = ({
   children,
@@ -43,7 +43,8 @@ const PrimaryButton = ({
     disabled={disabled}
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
-      "bg-transparent px-6 py-4",
+      // ↓ responsive padding (was px-6 py-4 fixed)
+      "bg-transparent px-4 sm:px-6 py-3 sm:py-4",
       "text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase",
       "disabled:opacity-50 disabled:pointer-events-none",
       className
@@ -51,18 +52,12 @@ const PrimaryButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{
-        initial: { scaleX: 0, originX: 0 },
-        hover: { scaleX: 1, originX: 0 },
-      }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-[2px] bg-[#FF3D00]"
     />
     <motion.div
-      variants={{
-        initial: { scaleX: 1, originX: 1 },
-        hover: { scaleX: 0, originX: 1 },
-      }}
+      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-[1px] bg-[#262626]"
     />
@@ -92,10 +87,7 @@ const GhostButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{
-        initial: { scaleX: 0, originX: 0 },
-        hover: { scaleX: 1, originX: 0 },
-      }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-[1px] bg-[#FAFAFA]"
     />
@@ -118,7 +110,8 @@ const SecondaryButton = ({
     disabled={disabled}
     className={cn(
       "group relative inline-flex items-center justify-center gap-2",
-      "border border-[#262626] bg-[#0A0A0A] px-6 py-4",
+      // ↓ responsive padding
+      "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
       "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
@@ -131,6 +124,7 @@ const SecondaryButton = ({
 );
 
 // ── Modal Wrapper ───────────────────────────────────────────
+// ↓ Bottom-sheet on mobile → centered dialog on sm+
 
 interface ModalProps {
   open: boolean;
@@ -144,19 +138,24 @@ function Modal({ open, onClose, children, title }: ModalProps) {
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-50 bg-[#0A0A0A]/90 backdrop-blur-md flex items-center justify-center p-4"
+          // ↓ items-end on mobile (bottom sheet), items-center on sm+
+          className="fixed inset-0 z-50 bg-[#0A0A0A]/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-2xl border border-[#262626] bg-[#0A0A0A] p-8 relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.98, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            // ↓ rounded top corners on mobile only, full-width bottom sheet → constrained dialog
+            className="w-full sm:max-w-2xl border border-[#262626] bg-[#0A0A0A] p-5 sm:p-8 relative overflow-hidden rounded-t-2xl sm:rounded-none max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* ↓ Drag handle — only visible on mobile */}
+            <div className="sm:hidden w-10 h-1 bg-[#262626] rounded-full mx-auto mb-4" />
+
             {/* NOISE TEXTURE */}
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.015] mix-blend-overlay z-0"
@@ -166,7 +165,7 @@ function Modal({ open, onClose, children, title }: ModalProps) {
               }}
             />
 
-            <div className="relative z-10 flex items-center justify-between mb-8 border-b border-[#262626] pb-4">
+            <div className="relative z-10 flex items-center justify-between mb-6 sm:mb-8 border-b border-[#262626] pb-4">
               <h3 className="text-sm font-bold tracking-[0.2em] text-[#FAFAFA] uppercase">
                 {title}
               </h3>
@@ -186,7 +185,7 @@ function Modal({ open, onClose, children, title }: ModalProps) {
   );
 }
 
-// ── Add Card Modal ─────────────────────────
+// ── Add Card Modal ──────────────────────────────────────────
 
 function AddCardModal({
   open,
@@ -213,7 +212,7 @@ function AddCardModal({
 
   return (
     <Modal open={open} onClose={onClose} title="NEW ENTITY INJECTION">
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div>
           <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
             QUERY SEQUENCE
@@ -222,7 +221,8 @@ function AddCardModal({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="INPUT FRONTAL PROMPT..."
-            className="w-full min-h-[80px] bg-transparent border border-[#262626] p-4 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors resize-y"
+            // ↓ slightly smaller min-h on mobile
+            className="w-full min-h-[80px] bg-transparent border border-[#262626] p-3 sm:p-4 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors resize-y"
           />
         </div>
 
@@ -234,7 +234,8 @@ function AddCardModal({
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder="INPUT REVERSE REVELATION..."
-            className="w-full min-h-[160px] bg-transparent border border-[#262626] p-4 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors resize-y"
+            // ↓ shorter on mobile, full height on sm+
+            className="w-full min-h-[120px] sm:min-h-[160px] bg-transparent border border-[#262626] p-3 sm:p-4 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors resize-y"
           />
         </div>
 
@@ -242,13 +243,15 @@ function AddCardModal({
           <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
             DIFFICULTY PROTOCOL
           </label>
-          <div className="flex gap-4">
+          {/* ↓ flex-wrap so buttons don't overflow on very small screens */}
+          <div className="flex flex-wrap gap-2 sm:gap-4">
             {["easy", "medium", "hard"].map((level) => (
               <button
                 key={level}
                 onClick={() => setDifficulty(level)}
                 className={cn(
-                  "flex-1 border px-6 py-4 text-[10px] font-bold tracking-widest uppercase transition-colors",
+                  // ↓ flex-1 so they share space, responsive padding
+                  "flex-1 border px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold tracking-widest uppercase transition-colors",
                   difficulty === level
                     ? "border-[#FAFAFA] text-[#0A0A0A] bg-[#FAFAFA]"
                     : "border-[#262626] text-[#737373] hover:border-[#FAFAFA] hover:text-[#FAFAFA] bg-transparent"
@@ -260,10 +263,8 @@ function AddCardModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-4 border-t border-[#262626] pt-6">
-          <GhostButton onClick={onClose}>
-            CANCEL
-          </GhostButton>
+        <div className="flex items-center justify-end gap-4 border-t border-[#262626] pt-4 sm:pt-6">
+          <GhostButton onClick={onClose}>CANCEL</GhostButton>
           <PrimaryButton
             onClick={handleSave}
             disabled={!question.trim() || !answer.trim()}
@@ -304,7 +305,7 @@ export default function FlashcardDeckDetail() {
   const stats = useMemo(() => {
     const totalCards = cards.length;
     const dueToday = cards.filter(
-      (card) => new Date(card.nextReview) <= new Date(),
+      (card) => new Date(card.nextReview) <= new Date()
     ).length;
     const mastered = cards.filter((card) => card.mastery >= 80).length;
     return { totalCards, dueToday, mastered };
@@ -319,7 +320,7 @@ export default function FlashcardDeckDetail() {
   const handleAddCard = async (
     question: string,
     answer: string,
-    difficulty: string,
+    difficulty: string
   ) => {
     await addCard(deckId, question.trim(), answer.trim(), difficulty);
     await fetchDecks();
@@ -329,113 +330,158 @@ export default function FlashcardDeckDetail() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-white pb-32">
-        
+      <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-white pb-8 sm:pb-16 md:pb-32 font-sans">
+
         {/* NOISE TEXTURE */}
         <div
-          className="pointer-events-none fixed inset-0 opacity-[0.015] mix-blend-overlay z-50"
+          className="pointer-events-none fixed inset-0 opacity-[0.015] mix-blend-overlay z-30"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
             backgroundRepeat: "repeat",
           }}
         />
 
-        {/* HERO SECTION */}
-        <div className="relative pt-32 pb-16 px-8 md:px-16 border-b border-[#262626]">
+        {/* ── HERO SECTION ── */}
+        {/* ↓ Responsive top/bottom padding and horizontal padding */}
+        <div className="relative pt-8 sm:pt-16 md:pt-32 pb-6 sm:pb-10 md:pb-16 px-4 sm:px-8 md:px-16 border-b border-[#262626]">
           <motion.div
             variants={staggerContainer}
             initial="hidden"
             animate="show"
-            className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-12"
+            // ↓ stacks on mobile, side-by-side from md
+            className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-12"
           >
             <div>
-              <motion.div variants={fadeUp} className="mb-8">
-                <GhostButton onClick={() => navigate("/flashcards")} className="px-0">
+              {/* ↓ tighter margin on mobile */}
+              <motion.div variants={fadeUp} className="mb-4 sm:mb-8">
+                <GhostButton
+                  onClick={() => navigate("/flashcards")}
+                  className="px-0"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   RETURN TO DECKS
                 </GhostButton>
               </motion.div>
-              
-              <motion.h1 
+
+              {/* ↓ starts at text-4xl mobile → scales up */}
+              <motion.h1
                 variants={fadeUp}
-                className="text-6xl md:text-8xl lg:text-[8rem] font-bold tracking-tighter leading-none uppercase mix-blend-difference break-words max-w-4xl"
+                className="text-4xl sm:text-6xl md:text-8xl lg:text-[8rem] font-bold tracking-tighter leading-none uppercase mix-blend-difference break-words max-w-4xl"
               >
                 {currentDeck?.name || "LOADING."}
               </motion.h1>
-              <motion.div 
+
+              <motion.div
                 variants={fadeUp}
-                className="mt-6 flex items-center gap-6"
+                // ↓ tighter gap on mobile
+                className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6"
               >
-                <div className="h-1 w-12 bg-[#FF3D00]" />
-                <p className="text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
                   {currentDeck?.subject || "GENERAL SUBJECT"}
                 </p>
               </motion.div>
             </div>
-            
-            <motion.div variants={fadeUp} className="flex flex-col gap-4 min-w-[200px] shrink-0">
-              <PrimaryButton 
+
+            {/* ↓ row on mobile, column from sm; flex-1 buttons fill available space on mobile */}
+            <motion.div
+              variants={fadeUp}
+              className="flex flex-row sm:flex-col gap-3 sm:gap-4 sm:min-w-[200px] shrink-0"
+            >
+              <PrimaryButton
                 onClick={() => startDeckSession(false)}
                 disabled={cards.length === 0}
+                className="flex-1 sm:flex-none justify-center sm:justify-start"
               >
-                START RECALL <ArrowRight className="w-4 h-4 ml-1" />
+                <span className="hidden sm:inline">START RECALL</span>
+                <span className="sm:hidden">RECALL</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
               </PrimaryButton>
-              <GhostButton onClick={() => setShowAddCard(true)}>
+              <GhostButton
+                onClick={() => setShowAddCard(true)}
+                className="flex-1 sm:flex-none justify-center sm:justify-start"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                CREATE CARD
+                <span className="hidden sm:inline">CREATE CARD</span>
+                <span className="sm:hidden">ADD</span>
               </GhostButton>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* STATS ROW */}
+        {/* ── STATS ROW ── */}
         <div className="border-b border-[#262626] bg-[#0A0A0A]">
-            <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 divide-x divide-y md:divide-y-0 divide-[#262626]">
-                <div className="p-8 md:p-12 flex flex-col justify-between">
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">TOTAL VOLUME</p>
-                    <p className="text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] leading-none">{stats.totalCards}</p>
-                </div>
-                <div className="p-8 md:p-12 flex flex-col justify-between">
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase mb-8">DUE TODAY</p>
-                    <p className="text-5xl md:text-7xl font-bold tracking-tighter text-[#FF3D00] leading-none">{stats.dueToday}</p>
-                </div>
-                <div className="p-8 md:p-12 flex flex-col justify-between col-span-2 md:col-span-1 border-t md:border-t-0 border-[#262626]">
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">MASTERED</p>
-                    <p className="text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] leading-none">{stats.mastered}</p>
-                </div>
+          <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 divide-x divide-y md:divide-y-0 divide-[#262626]">
+            <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between">
+              {/* ↓ tighter bottom margin on mobile */}
+              <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 sm:mb-8">
+                TOTAL VOLUME
+              </p>
+              {/* ↓ number scales from text-4xl up */}
+              <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] leading-none">
+                {stats.totalCards}
+              </p>
             </div>
+            <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between">
+              <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase mb-4 sm:mb-8">
+                DUE TODAY
+              </p>
+              <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FF3D00] leading-none">
+                {stats.dueToday}
+              </p>
+            </div>
+            {/* ↓ col-span-2 on mobile (fills row), 1 col from md */}
+            <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between col-span-2 md:col-span-1 border-t md:border-t-0 border-[#262626]">
+              <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 sm:mb-8">
+                MASTERED
+              </p>
+              <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] leading-none">
+                {stats.mastered}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* WEAK CARDS SECTION */}
+        {/* ── WEAK CARDS SECTION ── */}
         {weakCards.length > 0 && (
-          <div className="max-w-7xl mx-auto px-8 md:px-16 py-16">
-            <div className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
-              <div className="flex items-center gap-4 text-[#FF3D00]">
-                <AlertTriangle className="w-8 h-8" />
-                <h2 className="text-3xl font-bold tracking-tighter uppercase">TARGET FOCUS</h2>
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
+              <div className="flex items-center gap-3 sm:gap-4 text-[#FF3D00]">
+                {/* ↓ icon scales up on sm */}
+                <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
+                <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
+                  TARGET FOCUS
+                </h2>
               </div>
               <div className="h-[1px] flex-1 bg-[#262626]" />
-              <PrimaryButton onClick={() => startDeckSession(true)}>
-                REVIEW WEAK CARDS
+              {/* ↓ full width on mobile, auto on sm+ */}
+              <PrimaryButton
+                onClick={() => startDeckSession(true)}
+                className="w-full sm:w-auto justify-center sm:justify-start"
+              >
+                <span className="hidden sm:inline">REVIEW WEAK CARDS</span>
+                <span className="sm:hidden">REVIEW WEAK</span>
               </PrimaryButton>
             </div>
 
-            <motion.div 
+            <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 md:grid-cols-2 border-t border-l border-[#262626]"
+              // ↓ single col mobile, 2-col from sm
+              className="grid grid-cols-1 sm:grid-cols-2 border-t border-l border-[#262626]"
             >
               {weakCards.map((card) => (
                 <motion.div
                   key={card._id}
                   variants={fadeUp}
-                  className="group relative border-b border-r border-[#262626] p-8 overflow-hidden flex flex-col min-h-[300px]"
+                  // ↓ reduced min-h on mobile
+                  className="group relative border-b border-r border-[#262626] p-5 sm:p-8 overflow-hidden flex flex-col min-h-[200px] sm:min-h-[300px]"
                 >
                   <div className="absolute inset-0 bg-[#FAFAFA] origin-bottom scale-y-0 transition-transform duration-500 ease-[0.25,0,0,1] group-hover:scale-y-100 z-0" />
-                  
+
                   <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
-                    <div className="flex justify-between items-start mb-6">
+                    <div className="flex justify-between items-start mb-4 sm:mb-6">
                       <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#FF3D00] group-hover:text-[#0A0A0A]/60">
                         {card.difficulty}
                       </span>
@@ -444,7 +490,7 @@ export default function FlashcardDeckDetail() {
                       </span>
                     </div>
 
-                    <h3 className="text-xl md:text-2xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
                       {card.question}
                     </h3>
                     <p className="text-sm text-[#737373] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">
@@ -457,26 +503,35 @@ export default function FlashcardDeckDetail() {
           </div>
         )}
 
-        {/* ALL CARDS LIST */}
-        <div className="max-w-7xl mx-auto px-8 md:px-16 py-16">
-          <div className="flex items-center gap-4 mb-12">
-            <h2 className="text-3xl font-bold tracking-tighter uppercase">INVENTORY</h2>
+        {/* ── ALL CARDS LIST ── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
+            <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
+              INVENTORY
+            </h2>
             <div className="h-[1px] flex-1 bg-[#262626]" />
             <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
-              {cards.length.toString().padStart(2, "0")} TOTAL ENTITIES
+              {cards.length.toString().padStart(2, "0")}
+              <span className="hidden sm:inline"> TOTAL ENTITIES</span>
             </span>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            // ↓ 1-col mobile, 2-col sm, 3-col lg; reduced gap on mobile
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {Array.from({ length: 3 }).map((_, idx) => (
-                <div key={idx} className="h-64 border border-[#262626] bg-[#0A0A0A] animate-pulse" />
+                <div
+                  key={idx}
+                  className="h-48 sm:h-64 border border-[#262626] bg-[#0A0A0A] animate-pulse"
+                />
               ))}
             </div>
           ) : cards.length === 0 ? (
-            <div className="border border-[#262626] p-16 flex flex-col items-center text-center">
-              <h3 className="text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">VOID.</h3>
-              <p className="text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+            <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
+              <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
+                VOID.
+              </h3>
+              <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
                 NO ENTITIES POPULATED.
               </p>
               <PrimaryButton onClick={() => setShowAddCard(true)}>
@@ -484,39 +539,45 @@ export default function FlashcardDeckDetail() {
               </PrimaryButton>
             </div>
           ) : (
-            <motion.div 
+            <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-[#262626]"
+              // ↓ 1-col mobile, 2-col sm, 3-col lg with shared border pattern
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 border-t border-l border-[#262626]"
             >
               {cards.map((card) => (
                 <motion.div
                   key={card._id}
                   variants={fadeUp}
-                  className="group relative border-b border-r border-[#262626] p-8 overflow-hidden flex flex-col min-h-[300px]"
+                  // ↓ graduated min-h across breakpoints
+                  className="group relative border-b border-r border-[#262626] p-5 sm:p-8 overflow-hidden flex flex-col min-h-[200px] sm:min-h-[260px] lg:min-h-[300px]"
                 >
                   <div className="absolute inset-0 bg-[#FAFAFA] origin-bottom scale-y-0 transition-transform duration-500 ease-[0.25,0,0,1] group-hover:scale-y-100 z-0" />
-                  
+
                   <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
-                    <div className="flex justify-between items-start mb-6 gap-2">
-                       <span className={cn(
+                    <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
+                      <span
+                        className={cn(
                           "text-[10px] font-bold tracking-[0.2em] uppercase transition-colors group-hover:text-[#0A0A0A]/60",
-                          card.difficulty === 'hard' ? 'text-[#FF3D00]' : 'text-[#737373]'
-                        )}>
-                          {card.difficulty}
-                       </span>
-                       <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] group-hover:text-[#0A0A0A]/80 uppercase">
-                            VOL {card.mastery}%
-                          </span>
-                          <span className="text-[8px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#0A0A0A]/40 uppercase">
-                            REV: {new Date(card.nextReview).toLocaleDateString()}
-                          </span>
-                       </div>
+                          card.difficulty === "hard"
+                            ? "text-[#FF3D00]"
+                            : "text-[#737373]"
+                        )}
+                      >
+                        {card.difficulty}
+                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] group-hover:text-[#0A0A0A]/80 uppercase">
+                          VOL {card.mastery}%
+                        </span>
+                        <span className="text-[8px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#0A0A0A]/40 uppercase">
+                          REV: {new Date(card.nextReview).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
 
-                    <h3 className="text-xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
+                    <h3 className="text-lg sm:text-xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
                       {card.question}
                     </h3>
                     <p className="text-sm text-[#737373] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">

@@ -13,28 +13,33 @@ const easing = [0.25, 0, 0, 1] as const;
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easing } },
-  exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: easing } }
+  exit: { opacity: 0, y: -20, transition: { duration: 0.3, ease: easing } },
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
-const PrimaryButton = ({ onClick, children, className, disabled, type = "button" }: any) => (
+const PrimaryButton = ({
+  onClick,
+  children,
+  className,
+  disabled,
+  type = "button",
+}: any) => (
   <button
     type={type}
     onClick={onClick}
     disabled={disabled}
     className={cn(
       "group relative border border-[#262626] bg-[#0A0A0A] px-6 py-4 text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase transition-all duration-300 hover:bg-[#FAFAFA] hover:text-[#0A0A0A] disabled:opacity-50 disabled:cursor-not-allowed",
-      className
+      className,
     )}
   >
-    <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
+    <span className="relative z-10 flex items-center justify-center gap-2">
+      {children}
+    </span>
   </button>
 );
 
@@ -49,14 +54,11 @@ export default function Login() {
   const handleDemoLogin = async () => {
     setError("");
     setIsLoading(true);
-
     try {
       await login(DEMO_EMAIL, DEMO_PASSWORD);
       navigate("/");
     } catch (err: unknown) {
-      const axiosErr = err as {
-        response?: { data?: { message?: string } };
-      };
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setError(axiosErr.response?.data?.message || "Demo login failed");
     } finally {
       setIsLoading(false);
@@ -67,14 +69,11 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       await login(email, password);
       navigate("/");
     } catch (err: unknown) {
-      const axiosErr = err as {
-        response?: { data?: { message?: string } };
-      };
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setError(axiosErr.response?.data?.message || "Login failed");
     } finally {
       setIsLoading(false);
@@ -82,11 +81,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-[#FAFAFA] flex flex-col justify-center items-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-[#FAFAFA] selection:bg-[#FF3D00] selection:text-[#FAFAFA] flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden">
       {/* Fractal Noise Overlay */}
-      <div 
+      <div
         className="pointer-events-none fixed inset-0 z-50 opacity-[0.015] mix-blend-overlay"
-        style={{ backgroundImage: 'url(' + '"data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E"' + ')' }}
+        style={{
+          backgroundImage:
+            'url(' +
+            '"data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E"' +
+            ')',
+        }}
       />
 
       <div className="w-full max-w-xl mx-auto relative z-10">
@@ -94,23 +98,31 @@ export default function Login() {
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="flex flex-col gap-12"
+          className="flex flex-col gap-8 md:gap-12"
         >
           {/* Header */}
-          <motion.div variants={fadeUp} className="flex flex-col gap-4 border-b border-[#262626] pb-8">
+          <motion.div
+            variants={fadeUp}
+            className="flex flex-col gap-4 border-b border-[#262626] pb-6 md:pb-8"
+          >
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
                 [ AUTHENTICATION ]
               </span>
               <span className="h-px w-8 bg-[#262626]" />
             </div>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase leading-none">
+            {/* Smaller on mobile to avoid overflow */}
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter uppercase leading-none">
               LOGIN.
             </h1>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="bg-[#0A0A0A] border border-[#262626] p-8 md:p-12">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Form card */}
+          <motion.div
+            variants={fadeUp}
+            className="bg-[#0A0A0A] border border-[#262626] p-5 sm:p-8 md:p-12"
+          >
+            <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
               <AnimatePresence mode="wait">
                 {error && (
                   <motion.div
@@ -126,7 +138,8 @@ export default function Login() {
                 )}
               </AnimatePresence>
 
-              <div className="space-y-6">
+              <div className="space-y-5 md:space-y-6">
+                {/* Email */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">
                     EMAIL ADDRESS
@@ -135,6 +148,7 @@ export default function Login() {
                     <div className="absolute inset-y-0 left-0 flex items-center justify-center w-12 border-r border-[#262626] group-hover:border-[#404040] group-focus-within:border-[#FAFAFA] transition-colors duration-300">
                       <Mail className="w-4 h-4 text-[#737373] group-hover:text-[#999999] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
                     </div>
+                    {/* font-size 16px prevents iOS zoom — set via index.css */}
                     <input
                       type="email"
                       value={email}
@@ -146,6 +160,7 @@ export default function Login() {
                   </div>
                 </div>
 
+                {/* Password */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">
                     SECURITY KEY
@@ -166,9 +181,15 @@ export default function Login() {
                 </div>
               </div>
 
-              <PrimaryButton type="submit" className="w-full mt-8" disabled={isLoading}>
+              <PrimaryButton
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "AUTHENTICATING..." : "AUTHORIZE ACCESS"}
-                {!isLoading && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                {!isLoading && (
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                )}
               </PrimaryButton>
 
               <button
@@ -182,11 +203,16 @@ export default function Login() {
             </form>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="flex justify-between items-center text-[10px] font-bold tracking-[0.2em] uppercase border-t border-[#262626] pt-8">
+          {/* Footer link */}
+          <motion.div
+            variants={fadeUp}
+            className="flex justify-between items-center text-[10px] font-bold tracking-[0.2em] uppercase border-t border-[#262626] pt-6 md:pt-8"
+          >
             <span className="text-[#737373]">UNREGISTERED?</span>
+            {/* inline-link overrides the 44px min-height from index.css */}
             <Link
               to="/signup"
-              className="text-[#FAFAFA] hover:text-[#FF3D00] transition-colors flex items-center gap-2"
+              className="inline-link text-[#FAFAFA] hover:text-[#FF3D00] transition-colors flex items-center gap-2 py-2"
             >
               INITIALIZE ACCOUNT <ArrowRight className="w-3 h-3" />
             </Link>

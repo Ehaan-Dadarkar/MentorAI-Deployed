@@ -23,6 +23,21 @@
 @layer base {
   * {
     border-color: var(--color-border);
+    /* Remove tap flash on mobile */
+    -webkit-tap-highlight-color: transparent;
+    /* Better touch behaviour everywhere */
+    touch-action: manipulation;
+    box-sizing: border-box;
+  }
+
+  html {
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+    max-width: 100vw;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* iOS rubber-band only on the scroll axis */
+    overscroll-behavior-y: contain;
   }
 
   body {
@@ -33,8 +48,42 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+    max-width: 100vw;
+    /* iOS safe area bottom (home bar / notch) */
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* ── Prevent iOS zoom on input focus ─────────────────────────
+     iOS zooms in when an input's font-size < 16px.
+     Setting font-size: 16px on focus prevents it without
+     changing the visual size (we keep the small text via transform). */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* ── Minimum touch targets (Apple HIG: 44×44 pt) ─────────── */
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Override for purely inline links that should stay inline */
+  a.inline-link {
+    min-height: unset;
+    min-width: unset;
+    display: inline;
+  }
+
+  /* ── Scrollbars ───────────────────────────────────────────── */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -51,5 +100,42 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: #3a3a3a;
+  }
+
+  /* Hide scrollbar on mobile (still scrollable) */
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      scrollbar-width: none;
+    }
+  }
+}
+
+@layer utilities {
+  /* Safe area padding helpers */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Full height minus mobile bars */
+  .h-screen-mobile {
+    height: calc(100vh - 56px - 64px); /* top bar + bottom nav */
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }

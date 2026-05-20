@@ -77,9 +77,39 @@ function AppLayout() {
         hideSidebar && "block",
       )}
     >
+      {/* Sidebar renders its own responsive versions internally */}
       {!hideSidebar && <Sidebar />}
+
       <NexusCommandPalette />
-      <main className="flex-1 overflow-y-auto">
+
+      {/*
+        Main content area - responsive offsets:
+
+        MOBILE  (<md):
+          - pt-14  → clear the fixed top bar (56px)
+          - pb-16  → clear the fixed bottom nav (64px)
+          - no left margin (no left sidebar on mobile)
+
+        TABLET  (md → lg):
+          - pt-0, pb-0 → no top/bottom bars
+          - ml-16  → clear the fixed icon-only sidebar (64px)
+
+        DESKTOP (lg+):
+          - ml-0   → sidebar is in the flex flow, no manual offset needed
+      */}
+      <main
+        className={cn(
+          "flex-1 overflow-y-auto",
+          !hideSidebar && [
+            // Mobile
+            "pt-14 pb-16",
+            // Tablet
+            "md:pt-0 md:pb-0 md:ml-16",
+            // Desktop — sidebar is flex-flow, no offset needed
+            "lg:ml-0 lg:pt-0 lg:pb-0",
+          ],
+        )}
+      >
         <Suspense fallback={<LoadingSkeleton />}>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
@@ -87,8 +117,14 @@ function AppLayout() {
               <Route path="/tutor" element={<Tutor />} />
               <Route path="/flashcards" element={<Flashcards />} />
               <Route path="/flashcards/stats" element={<FlashcardStats />} />
-              <Route path="/flashcards/:deckId/study" element={<FlashcardStudy />} />
-              <Route path="/flashcards/:deckId" element={<FlashcardDeckDetail />} />
+              <Route
+                path="/flashcards/:deckId/study"
+                element={<FlashcardStudy />}
+              />
+              <Route
+                path="/flashcards/:deckId"
+                element={<FlashcardDeckDetail />}
+              />
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/voice-recall" element={<VoiceRecall />} />
               <Route path="/workspace" element={<Workspace />} />

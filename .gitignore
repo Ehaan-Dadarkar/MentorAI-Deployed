@@ -1,6 +1,7 @@
 # Environment Variables - NEVER commit these
 .env
 .env.local
+.env.*.local
 .env.production
 .env.development
 server/.env
@@ -14,9 +15,16 @@ server/node_modules/
 client/node_modules/
 
 # Build output
+dist/
 client/dist/
 client/build/
 server/dist/
+.vite/
+client/.vite/
+
+# Coverage
+coverage/
+client/coverage/
 
 # Logs
 *.log
