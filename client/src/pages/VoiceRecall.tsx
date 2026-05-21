@@ -633,27 +633,6 @@ function SessionScreen() {
           )}
         </AnimatePresence>
 
-        {/* IDLE HINT */}
-        {!transcript && !editedTranscript && !isRecording && !isTranscribing && (
-          <motion.div variants={fadeUp} className="flex justify-center py-2">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#262626] uppercase">
-              TAP THE MIC BELOW TO BEGIN SPEAKING
-            </span>
-          </motion.div>
-        )}
-
-        {/* TRANSCRIBING HINT */}
-        {isTranscribing && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex items-center justify-center gap-3 py-2"
-          >
-            <RotateCw className="w-4 h-4 animate-spin text-[#FF3D00]" />
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase animate-pulse">
-              PROCESSING SIGNAL...
-            </span>
-          </motion.div>
-        )}
       </motion.div>
 
       {/* ── FIXED BOTTOM CONTROL BAR ── */}
