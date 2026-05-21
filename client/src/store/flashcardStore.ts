@@ -301,7 +301,7 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
                 cardId,
                 grade,
                 previousMastery: priorCard?.mastery ?? 0,
-                nextMastery: updatedCard.mastery,
+                nextMastery: priorCard?.mastery ?? 0,
               },
             ],
           }
