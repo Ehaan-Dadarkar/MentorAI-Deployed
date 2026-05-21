@@ -34,7 +34,7 @@ const PrimaryButton = ({
   disabled?: boolean;
 }) => (
   <motion.button
-    whileHover="hover" initial="initial"
+    whileHover="hover" whileTap="tap" initial="initial"
     onClick={onClick} disabled={disabled}
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
@@ -47,13 +47,13 @@ const PrimaryButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
-      transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 }, tap: { scaleX: 1, originX: 0 } }}
+      transition={{ duration: 0.15, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-0.5 bg-[#FF3D00]"
     />
     <motion.div
-      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
-      transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
+      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 }, tap: { scaleX: 0, originX: 1 } }}
+      transition={{ duration: 0.15, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-px bg-[#262626]"
     />
   </motion.button>
@@ -67,7 +67,7 @@ const GhostButton = ({
   className?: string;
 }) => (
   <motion.button
-    whileHover="hover" initial="initial"
+    whileHover="hover" whileTap="tap" initial="initial"
     onClick={onClick}
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
@@ -79,8 +79,8 @@ const GhostButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
-      transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 }, tap: { scaleX: 1, originX: 0 } }}
+      transition={{ duration: 0.15, ease: [0.25, 0, 0, 1] }}
       className="absolute inset-x-0 bottom-0 h-px bg-[#FAFAFA]"
     />
   </motion.button>

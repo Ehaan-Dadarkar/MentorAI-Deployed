@@ -79,7 +79,7 @@ function SidebarItem({
         collapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
         isActive
           ? "bg-[#FAFAFA] text-[#0A0A0A]"
-          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
       )}
     >
       {isActive && (
@@ -222,7 +222,7 @@ export function Sidebar() {
           <button
             onClick={openNexus}
             className={cn(
-              "relative flex items-center w-full py-2.5 text-xs font-bold tracking-widest text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] transition-all duration-150 group uppercase overflow-hidden",
+              "relative flex items-center w-full py-2.5 text-xs font-bold tracking-widest text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all duration-150 group uppercase overflow-hidden",
               collapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
             )}
           >
@@ -267,6 +267,7 @@ export function Sidebar() {
                   isActive
                     ? "bg-[#FAFAFA] text-[#0A0A0A]"
                     : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+                  "active:text-[#FAFAFA] active:bg-[#262626]"
                 )}
               >
                 {isActive && (
@@ -398,7 +399,7 @@ export function Sidebar() {
         <div className="px-2 py-2">
           <button
             onClick={openNexus}
-            className="flex items-center justify-center p-2.5 w-full text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] transition-all relative group"
+            className="flex items-center justify-center p-2.5 w-full text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all relative group"
           >
             <Command className="w-4 h-4" />
             <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
@@ -420,7 +421,7 @@ export function Sidebar() {
                   "flex items-center justify-center p-2.5 transition-all relative group",
                   isActive
                     ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                    : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+                    : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
                 )}
               >
                 {isActive && (
@@ -463,13 +464,13 @@ export function Sidebar() {
         <div className="flex items-center gap-2">
           <button
             onClick={openNexus}
-            className="p-2 text-[#737373] hover:text-[#FAFAFA] transition-colors"
+            className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
           >
             <Command className="w-5 h-5" />
           </button>
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="p-2 text-[#737373] hover:text-[#FAFAFA] transition-colors"
+            className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -493,7 +494,7 @@ export function Sidebar() {
                 className="flex flex-1 items-center justify-center"
               >
                 {/* ↓ CHANGED: items-center removes left-align; no pl-3 / w-full needed */}
-                <div className="flex flex-col items-center gap-[3px] text-[#737373] hover:text-[#FAFAFA] transition-colors">
+                <div className="flex flex-col items-center gap-[3px] text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors">
                   <item.icon className="w-5 h-5" />
                   <span className="text-[9px] font-bold tracking-wider uppercase leading-none">
                     {item.label}
@@ -515,7 +516,7 @@ export function Sidebar() {
               // ↓ CHANGED: justify-center so content sits in the middle of each cell
               className={cn(
                 "relative flex flex-1 items-center justify-center transition-colors",
-                isActive ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
+                isActive ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA]",
               )}
             >
               {/* ↓ active bar now spans the full cell width */}
@@ -570,7 +571,7 @@ export function Sidebar() {
                 </div>
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="p-2 text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                  className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -592,7 +593,7 @@ export function Sidebar() {
                         "relative flex items-center w-full py-3 px-3 text-xs font-bold tracking-widest uppercase transition-all duration-150",
                         isActive
                           ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+                          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
                       )}
                     >
                       {isActive && (

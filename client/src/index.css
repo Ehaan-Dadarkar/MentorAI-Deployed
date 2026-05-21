@@ -25,9 +25,24 @@
     border-color: var(--color-border);
     /* Remove tap flash on mobile */
     -webkit-tap-highlight-color: transparent;
-    /* Better touch behaviour everywhere */
-    touch-action: manipulation;
     box-sizing: border-box;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.75;
+    transform: scale(0.97);
+    transition: opacity 0.05s, transform 0.05s;
   }
 
   html {

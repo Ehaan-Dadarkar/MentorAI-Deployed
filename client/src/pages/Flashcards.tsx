@@ -49,6 +49,7 @@ const PrimaryButton = ({
 }) => (
   <motion.button
     whileHover="hover"
+    whileTap="tap"
     initial="initial"
     onClick={onClick}
     disabled={disabled}
@@ -59,13 +60,13 @@ const PrimaryButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
-      transition={{ duration: 0.4, ease: easing }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 }, tap: { scaleX: 1, originX: 0 } }}
+      transition={{ duration: 0.15, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-[2px] bg-[#FF3D00]"
     />
     <motion.div
-      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
-      transition={{ duration: 0.4, ease: easing }}
+      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 }, tap: { scaleX: 0, originX: 1 } }}
+      transition={{ duration: 0.15, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-[1px] bg-[#262626]"
     />
   </motion.button>
@@ -81,18 +82,19 @@ const GhostButton = ({
 }) => (
   <motion.button
     whileHover={disabled ? "initial" : "hover"}
+    whileTap={disabled ? "initial" : "tap"}
     initial="initial"
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] transition-colors rounded-none shadow-none disabled:opacity-50 disabled:pointer-events-none",
+      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors rounded-none shadow-none disabled:opacity-50 disabled:pointer-events-none",
       className,
     )}
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
-      transition={{ duration: 0.4, ease: easing }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 }, tap: { scaleX: 1, originX: 0 } }}
+      transition={{ duration: 0.15, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-[1px] bg-[#FAFAFA]"
     />
   </motion.button>

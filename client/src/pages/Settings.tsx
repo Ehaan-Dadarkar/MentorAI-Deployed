@@ -31,6 +31,7 @@ const PrimaryButton = ({
 }) => (
   <motion.button
     whileHover="hover"
+    whileTap="tap"
     initial="initial"
     onClick={onClick}
     disabled={disabled}
@@ -44,13 +45,13 @@ const PrimaryButton = ({
   >
     <span className="relative z-10 flex items-center gap-2">{children}</span>
     <motion.div
-      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
-      transition={{ duration: 0.4, ease: easing }}
+      variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 }, tap: { scaleX: 1, originX: 0 } }}
+      transition={{ duration: 0.15, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-0.5 bg-[#FF3D00]"
     />
     <motion.div
-      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
-      transition={{ duration: 0.4, ease: easing }}
+      variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 }, tap: { scaleX: 0, originX: 1 } }}
+      transition={{ duration: 0.15, ease: easing }}
       className="absolute inset-x-0 bottom-0 h-px bg-[#262626]"
     />
   </motion.button>
