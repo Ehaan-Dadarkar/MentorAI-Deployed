@@ -56,19 +56,22 @@ router.post(
       const token = generateToken(user._id);
       setTokenCookie(res, token);
 
+      // re-read with the private field selected so the client gets an accurate boolean
+      const freshUser = await User.findById(user._id).select('+openrouterApiKey');
+
       res.status(201).json({
         success: true,
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          subjects: user.subjects,
-          studyGoalMinutes: user.studyGoalMinutes,
-          streak: user.streak,
-          weakTopics: user.weakTopics,
-          isDemo: user.isDemo,
-          hasOpenrouterApiKey: Boolean(user.openrouterApiKey),
-          createdAt: user.createdAt,
+          id: freshUser._id,
+          name: freshUser.name,
+          email: freshUser.email,
+          subjects: freshUser.subjects,
+          studyGoalMinutes: freshUser.studyGoalMinutes,
+          streak: freshUser.streak,
+          weakTopics: freshUser.weakTopics,
+          isDemo: freshUser.isDemo,
+          hasOpenrouterApiKey: Boolean(freshUser.openrouterApiKey),
+          createdAt: freshUser.createdAt,
         },
       });
     } catch (error) {
@@ -86,7 +89,7 @@ router.post(
     try {
       const { email, password } = req.body;
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }).select('+openrouterApiKey');
       if (!user) {
         return res
           .status(401)
@@ -199,7 +202,9 @@ router.patch("/profile", auth, async (req, res, next) => {
 
     const user = await User.findByIdAndUpdate(req.userId, updates, {
       new: true,
-    }).select("-passwordHash");
+    })
+      .select("-passwordHash")
+      .select("+openrouterApiKey");
 
     res.json({
       success: true,
