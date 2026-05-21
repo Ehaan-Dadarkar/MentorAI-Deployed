@@ -214,7 +214,9 @@ async function seedIfEmpty(userId) {
   // Update user streak
   await User.findByIdAndUpdate(userId, { streak: 8 });
 
-  console.log(`[dashboard] Seeded test data for user ${userId}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[dashboard] Seeded test data for user ${userId}`);
+  }
 }
 
 // ── Routes ─────────────────────────────────────────────
@@ -319,7 +321,9 @@ router.get("/chart", auth, async (req, res, next) => {
       });
     }
 
-    console.log("[Dashboard Chart]", chart); // Debug log
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Dashboard Chart]", chart); // Debug log
+    }
 
     res.json({ success: true, chart });
   } catch (error) {

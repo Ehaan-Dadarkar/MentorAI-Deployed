@@ -59,7 +59,9 @@ router.post(
         });
       }
 
-      console.log("Note content length:", note.content?.length);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Note content length:", note.content?.length);
+      }
 
       // Strip HTML tags to get plain text
       const stripHtml = (html) => {
@@ -79,7 +81,9 @@ router.post(
       // Truncate to 800 chars to leave room for AI response
       const truncatedContent = plainContent.substring(0, 800);
 
-      console.log("Plain content preview:", truncatedContent.substring(0, 300));
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Plain content preview:", truncatedContent.substring(0, 300));
+      }
 
       if (truncatedContent.length < 10) {
         return res.status(400).json({

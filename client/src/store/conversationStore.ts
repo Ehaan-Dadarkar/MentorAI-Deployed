@@ -364,9 +364,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       .join("\n\n")
       .trim();
     const requestSessionId = state.activeSessionId || undefined;
+    const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
     try {
-      const response = await fetch("/api/tutor/chat", {
+      const response = await fetch(`${apiUrl}/api/tutor/chat`, {
         method: "POST",
         credentials: "include",
         headers: {

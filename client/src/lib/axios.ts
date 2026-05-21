@@ -3,9 +3,10 @@ import { useRateLimitStore } from "@/store/rateLimitStore";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const normalizedApiBaseUrl = API_BASE_URL.replace(/\/$/, "");
 
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: `${normalizedApiBaseUrl}/api`,
   withCredentials: true,
   timeout: 30000,
   headers: {

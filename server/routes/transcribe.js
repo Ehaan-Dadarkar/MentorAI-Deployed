@@ -15,12 +15,16 @@ const WHISPER_URL = process.env.WHISPER_SERVER_URL || "http://127.0.0.1:5001";
 
 router.post("/", auth, upload.single("audio"), async (req, res) => {
   try {
-    console.log("Transcribe: received audio");
-    console.log("File size:", req.file?.size);
-    console.log("Mimetype:", req.file?.mimetype);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Transcribe: received audio");
+      console.log("File size:", req.file?.size);
+      console.log("Mimetype:", req.file?.mimetype);
+    }
 
     if (!req.file) {
-      console.log("Transcribe: no file received");
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Transcribe: no file received");
+      }
       return res.status(400).json({
         success: false,
         transcript: "",
@@ -38,7 +42,9 @@ router.post("/", auth, upload.single("audio"), async (req, res) => {
     const subject = req.body.subject || "";
     if (subject) formData.append("subject", subject);
 
-    console.log("Forwarding to Whisper at:", WHISPER_URL);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Forwarding to Whisper at:", WHISPER_URL);
+    }
 
     const response = await axios.post(`${WHISPER_URL}/transcribe`, formData, {
       headers: {
@@ -50,7 +56,9 @@ router.post("/", auth, upload.single("audio"), async (req, res) => {
     });
 
     const transcript = response.data?.transcript || "";
-    console.log("Whisper transcript:", transcript);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Whisper transcript:", transcript);
+    }
 
     return res.json({
       success: true,

@@ -1,20 +1,24 @@
-  const axios = require("axios");
+const axios = require("axios");
 
-  const OLLAMA_BASE_URL = (
-    process.env.OLLAMA_URL || "http://localhost:11434"
-  ).replace(/\/v1$/, "");
-  const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3.5:2b";
-  const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-  const OPENROUTER_MODEL =
-    process.env.OPENROUTER_MODEL || "meta-llama/llama-3.1-8b-instruct";
-  const USE_OPENROUTER_IN_PRODUCTION = process.env.NODE_ENV === "production";
+const OLLAMA_BASE_URL = (
+  process.env.OLLAMA_URL || "http://localhost:11434"
+).replace(/\/v1$/, "");
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3.5:2b";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL || "meta-llama/llama-3.1-8b-instruct";
+const USE_OPENROUTER_IN_PRODUCTION = process.env.NODE_ENV === "production";
 
+if (process.env.NODE_ENV !== "production") {
   console.log(
     "AI Backend:",
-    USE_OPENROUTER_IN_PRODUCTION ? "OpenRouter (production)" : `Ollama at ${OLLAMA_BASE_URL}`,
+    USE_OPENROUTER_IN_PRODUCTION
+      ? "OpenRouter (production)"
+      : `Ollama at ${OLLAMA_BASE_URL}`,
   );
   console.log("Ollama Model:", OLLAMA_MODEL);
   console.log("OpenRouter Model (JSON tasks):", OPENROUTER_MODEL);
+}
 
   const callOpenRouter = async (messages, options = {}) => {
     const apiKey = options.apiKey;
@@ -289,7 +293,9 @@
       apiKey: options.apiKey,
     });
     try {
-      console.log("AI raw response:", response.substring(0, 500));
+      if (process.env.NODE_ENV !== "production") {
+        console.log("AI raw response:", response.substring(0, 500));
+      }
       const parsed = JSON.parse(response);
       if (Array.isArray(parsed)) {
         return parsed;

@@ -22,8 +22,10 @@ const TUTOR_MODEL =
   process.env.OPENROUTER_MODEL ||
   "meta-llama/llama-3.1-8b-instruct";
 
-console.log("Tutor AI Backend: OpenRouter");
-console.log("Tutor Model:", TUTOR_MODEL);
+if (process.env.NODE_ENV !== "production") {
+  console.log("Tutor AI Backend: OpenRouter");
+  console.log("Tutor Model:", TUTOR_MODEL);
+}
 
 // ── Validation Schemas ────────────────────────────────────
 const chatSchema = z.object({
@@ -167,14 +169,17 @@ function createTokenTracker(model, mode) {
 
     log() {
       if (!startTime || tokenCount === 0) {
-        console.log("[TokenTracker] No tokens recorded.");
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[TokenTracker] No tokens recorded.");
+        }
         return;
       }
 
       const durationSec = (Date.now() - startTime) / 1000;
       const tokensPerSecond = (tokenCount / durationSec).toFixed(2);
 
-      console.log(`
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`
 ╔══════════════════════════════════╗
 ║       TUTOR PERFORMANCE LOG      ║
 ╠══════════════════════════════════╣
@@ -184,6 +189,7 @@ function createTokenTracker(model, mode) {
 ║ Duration   : ${(durationSec.toFixed(2) + "s").padEnd(19)}║
 ║ Speed      : ${(tokensPerSecond + " tok/s").padEnd(19)}║
 ╚══════════════════════════════════╝`);
+  }
 
       return {
         tokenCount,
@@ -359,7 +365,9 @@ router.post(
         const { content, followUps } = parseFollowUps(fullResponse);
         const safeContent = content || "(No response generated)";
 
-        console.log("[TutorAI] Response:", safeContent.slice(0, 200));
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[TutorAI] Response:", safeContent.slice(0, 200));
+        }
 
         try {
           const lastUserMessage = [...messages]

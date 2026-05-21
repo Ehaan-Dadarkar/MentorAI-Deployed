@@ -30,6 +30,7 @@ const app = express();
 // This ensures we get the real user IP, not Vercel's proxy IP
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 const DEMO_EMAIL = process.env.DEMO_EMAIL || "demo@mentorai.app";
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo@1234";
 
@@ -73,7 +74,7 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://mentorai.vercel.app',
   'https://mentorai-prod.vercel.app',
-  /\.vercel\.app$/
+  /\.vercel\.app$/,
 ];
 
 // Middleware
@@ -130,16 +131,17 @@ app.use(errorLogger);
 
 app.use((err, _req, res, _next) => {
   const status = err.status || 500;
-  const message =
-    process.env.NODE_ENV === "production"
-      ? "Internal server error"
-      : err.message;
-  res.status(status).json({ error: message });
+  const isDev = process.env.NODE_ENV !== "production";
+  res.status(status).json({
+    success: false,
+    error: isDev ? err.message : "Internal server error",
+    ...(isDev ? { stack: err.stack } : {}),
+  });
 });
 
 // Connect to MongoDB and start server
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(MONGO_URI)
   .then(async () => {
     console.log("Connected to MongoDB");
     const demoUser = await ensureDemoAccount();
