@@ -442,9 +442,44 @@ export default function Workspace() {
                       </motion.span>
                     )}
                   </AnimatePresence>
-                  {/* ↓ dirty indicator dot */}
-                  {isDirty && !isSaving && (
-                    <span className="w-[6px] h-[6px] rounded-full bg-[#FF3D00] shrink-0" title="Unsaved changes" />
+                  {/* Save button — visible when dirty and not currently saving */}
+                  <AnimatePresence>
+                    {isDirty && !isSaving && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <PrimaryButton
+                          onClick={async () => {
+                            if (!activeNote) return;
+                            try {
+                              await saveActiveNote({
+                                title: titleDraft.trim() || activeNote.title,
+                                content: editorContent,
+                              });
+                              setIsDirty(false);
+                            } catch (e) {
+                              console.error(e);
+                            }
+                          }}
+                          disabled={isSaving}
+                          className="py-2 px-4 text-[10px]"
+                        >
+                          SAVE
+                          <ArrowRight className="w-3 h-3 ml-1" />
+                        </PrimaryButton>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Dot shown only while a save is in flight */}
+                  {isDirty && isSaving && (
+                    <span
+                      className="w-[6px] h-[6px] rounded-full bg-[#FF3D00] shrink-0"
+                      title="Unsaved changes"
+                    />
                   )}
                   <GhostButton
                     onClick={handleMoveToTrash}
