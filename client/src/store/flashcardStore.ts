@@ -273,17 +273,9 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
   },
 
   reviewCard: async (cardId, grade) => {
-    const { data } = await api.post("/flashcards/review", { cardId, grade });
-
-    const updatedCard = data.card as Flashcard;
     const priorCard = get().sessionCards.find((c) => c._id === cardId);
 
     set((state) => ({
-      cards: state.cards.map((c) => (c._id === cardId ? updatedCard : c)),
-      dueCards: state.dueCards.filter((c) => c._id !== cardId),
-      sessionCards: state.sessionCards.map((c) =>
-        c._id === cardId ? updatedCard : c,
-      ),
       sessionResults: state.sessionResults
         ? {
             ...state.sessionResults,
@@ -316,7 +308,39 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
         : null,
     }));
 
-    return updatedCard;
+    try {
+      const { data } = await api.post("/flashcards/review", { cardId, grade });
+
+      const updatedCard = data.card as Flashcard;
+
+      set((state) => ({
+        cards: state.cards.map((c) => (c._id === cardId ? updatedCard : c)),
+        dueCards: state.dueCards.filter((c) => c._id !== cardId),
+        sessionCards: state.sessionCards.map((c) =>
+          c._id === cardId ? updatedCard : c,
+        ),
+        sessionResults: state.sessionResults
+          ? {
+              ...state.sessionResults,
+              reviews: state.sessionResults.reviews.map((review) =>
+                review.cardId === cardId
+                  ? {
+                      ...review,
+                      nextMastery: updatedCard.mastery,
+                    }
+                  : review,
+              ),
+            }
+          : null,
+      }));
+
+      return updatedCard;
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+      }
+      return priorCard as Flashcard;
+    }
   },
 
   finishSession: () => {

@@ -224,11 +224,12 @@ export default function FlashcardStudy() {
 
   const handleGrade = async (grade: ReviewGrade) => {
     if (!currentCard) return;
-    await reviewCard(currentCard._id, grade);
+    const cardId = currentCard._id;
     const nextReviews = [...reviews, { cardId: currentCard._id, grade }];
     setReviews(nextReviews);
+    void reviewCard(cardId, grade).catch(() => {});
     if (cardIndex + 1 >= sessionCards.length) {
-      if (deckId !== "due") await completeSession(deckId, nextReviews);
+      if (deckId !== "due") void completeSession(deckId, nextReviews).catch(() => {});
       finishSession();
       return;
     }
