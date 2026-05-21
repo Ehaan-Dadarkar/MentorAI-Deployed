@@ -9,6 +9,7 @@ import { NexusCommandPalette } from "@/components/NexusCommandPalette";
 import ApiKeyGateModal from "@/components/modals/ApiKeyGateModal";
 import { LoadingSkeleton } from "@/components/ui/States";
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy-loaded pages
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -194,6 +195,7 @@ export default function App() {
           }
         />
       </Routes>
+      <Analytics />
     </Suspense>
   );
 }
