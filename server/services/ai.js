@@ -17,7 +17,11 @@
   console.log("OpenRouter Model (JSON tasks):", OPENROUTER_MODEL);
 
   const callOpenRouter = async (messages, options = {}) => {
-    const apiKey = options.apiKey || process.env.OPENROUTER_API_KEY;
+    const apiKey = options.apiKey;
+
+    if (!apiKey) {
+      throw new Error("No API key configured. Please add your OpenRouter API key in Settings.");
+    }
 
     try {
       const response = await axios.post(

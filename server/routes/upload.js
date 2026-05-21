@@ -5,6 +5,7 @@ const auth = require("../middleware/auth");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { extractTextFromPDF } = require("../services/pdfParser");
 const { callOpenRouter } = require("../services/ai");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const Note = require("../models/Note");
 
 const router = express.Router();
@@ -211,6 +212,10 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
     // Allow longer request/response socket timeout for AI processing (3 minutes)
     try { req.setTimeout(180000); } catch (e) {}
     try { res.setTimeout(180000); } catch (e) {}
+
+    const access = await requireOpenRouterAccess(req, res);
+    if (!access) return;
+
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
@@ -257,7 +262,7 @@ Return only valid JSON.`,
         callOpenRouter(promptMessages, {
           model: "meta-llama/llama-3.1-8b-instruct",
           temperature: 0.3,
-          apiKey: req.user?.openrouterApiKey,
+          apiKey: access.apiKey,
         }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error("AI processing timeout")), 60000),

@@ -4,6 +4,7 @@ const { z } = require("zod");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const {
   generateVoiceRecallQuestions,
   evaluateVoiceAnswer,
@@ -37,6 +38,9 @@ router.post(
   validate(generateQuestionsSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const { noteId, count } = req.body;
 
       // Fetch note from DB
@@ -90,7 +94,7 @@ router.post(
         truncatedContent,
         count,
         "meta-llama/llama-3.1-8b-instruct",
-        { apiKey: req.user?.openrouterApiKey },
+        { apiKey: access.apiKey },
       );
 
       res.json({

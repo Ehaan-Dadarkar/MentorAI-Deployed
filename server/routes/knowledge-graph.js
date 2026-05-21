@@ -2,6 +2,7 @@ const express = require("express");
 const auth = require("../middleware/auth");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const Quiz = require("../models/Quiz");
 const VoiceSession = require("../models/VoiceSession");
 const Deck = require("../models/Deck");
@@ -817,9 +818,12 @@ async function buildNoteCentricGraph({ notes, quizzes, voiceSessions, deckStatsM
   let usedAI = false;
   if (useAi && conceptNodes.length > 0) {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const aiResult = await generateAiConceptLinks(
         conceptNodes,
-        req.user?.openrouterApiKey || process.env.OPENROUTER_API_KEY,
+        access.apiKey,
       );
       usedAI = aiResult.usedAI;
       for (const aiEdge of aiResult.edges) {

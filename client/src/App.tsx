@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useNexusStore } from "@/store/nexusStore";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { NexusCommandPalette } from "@/components/NexusCommandPalette";
+import ApiKeyGateModal from "@/components/modals/ApiKeyGateModal";
 import { LoadingSkeleton } from "@/components/ui/States";
 import { cn } from "@/lib/utils";
 
@@ -81,6 +82,7 @@ function AppLayout() {
       {!hideSidebar && <Sidebar />}
 
       <NexusCommandPalette />
+      <ApiKeyGateModal />
 
       {/*
         Main content area - responsive offsets:

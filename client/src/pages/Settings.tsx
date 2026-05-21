@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import ApiKeySettings from "@/components/Settings/ApiKeySettings";
+import ApiKeySettings, { type ApiKeySettingsRef } from "@/components/Settings/ApiKeySettings";
 import { useAuthStore } from "@/store/authStore";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,10 @@ const fadeUp = {
 };
 
 const PrimaryButton = ({
-  children, onClick, className, disabled,
+  children,
+  onClick,
+  className,
+  disabled,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -55,20 +58,17 @@ const PrimaryButton = ({
 
 export default function Settings() {
   const { user, updateProfile } = useAuthStore();
+  const isDemo = Boolean(user?.isDemo);
   const [name, setName] = useState(user?.name || "");
-  const [studyGoal, setStudyGoal] = useState(user?.studyGoalMinutes || 60);
-  const [newSubject, setNewSubject] = useState("");
-  const [subjects, setSubjects] = useState<string[]>(user?.subjects || []);
-  const [openrouterApiKey, setOpenrouterApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const apiKeyRef = useRef<ApiKeySettingsRef>(null);
+
   useEffect(() => {
     if (!user) return;
     setName(user.name || "");
-    setStudyGoal(user.studyGoalMinutes || 60);
-    setSubjects(user.subjects || []);
   }, [user]);
 
   useEffect(() => {
@@ -76,37 +76,19 @@ export default function Settings() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleAddSubject = () => {
-    if (newSubject.trim() && !subjects.includes(newSubject.trim())) {
-      setSubjects([...subjects, newSubject.trim()]);
-      setNewSubject("");
-    }
-  };
-
-  const handleRemoveSubject = (subject: string) => {
-    setSubjects(subjects.filter((s) => s !== subject));
-  };
-
   const handleSave = async () => {
+    if (isDemo) return;
+
     setIsSaving(true);
     setSaved(false);
     try {
-      const updates: {
-        name: string;
-        subjects: string[];
-        studyGoalMinutes: number;
-        openrouterApiKey?: string;
-      } = { name, subjects, studyGoalMinutes: studyGoal };
-
-      if (openrouterApiKey.trim()) {
-        updates.openrouterApiKey = openrouterApiKey.trim();
-      }
-
-      await updateProfile(updates);
+      // ✅ FIX: run sequentially so errors from either surface correctly
+      await updateProfile({ name });
+      await apiKeyRef.current?.save();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // handled elsewhere
+      // individual components surface their own errors via their own state
     } finally {
       setIsSaving(false);
     }
@@ -149,18 +131,14 @@ export default function Settings() {
               </motion.div>
             </div>
 
-            {/* Save button — full width on mobile */}
+            {/* Top save button */}
             <motion.div variants={fadeUp} className="w-full sm:w-auto">
               <PrimaryButton
                 onClick={handleSave}
-                disabled={isSaving || isLoading}
+                disabled={isSaving || isLoading || isDemo}
                 className="w-full sm:w-auto justify-center"
               >
-                {saved
-                  ? "SAVED"
-                  : isSaving
-                    ? "SAVING..."
-                    : "SAVE CHANGES"}
+                {saved ? "SAVED" : isSaving ? "SAVING..." : "SAVE CHANGES"}
                 {!saved && !isSaving && <ArrowRight className="w-4 h-4 ml-1" />}
               </PrimaryButton>
             </motion.div>
@@ -169,6 +147,12 @@ export default function Settings() {
 
         {/* ── CONTENT ── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16">
+          {isDemo && (
+            <div className="mb-8 border border-[#262626] bg-[#FF3D00]/5 px-4 py-3 text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+              DEMO ACCOUNT — SETTINGS ARE READ-ONLY
+            </div>
+          )}
+
           <motion.div
             variants={staggerContainer}
             initial="hidden"
@@ -186,7 +170,6 @@ export default function Settings() {
                     <div className="h-px flex-1 bg-[#262626]" />
                   </div>
                   <div className="space-y-6 sm:space-y-8">
-                    <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
                     <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
                     <div className="h-20 w-full border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
                   </div>
@@ -215,6 +198,7 @@ export default function Settings() {
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="ENTER NAME..."
+                          disabled={isDemo}
                           className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
                         />
                       </div>
@@ -227,114 +211,20 @@ export default function Settings() {
                         <input
                           value={user?.email || ""}
                           disabled
-                          placeholder="EMAIL..."
                           className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#737373] focus:outline-none opacity-50 cursor-not-allowed uppercase"
                         />
-                      </div>
-
-                      {/* OpenRouter key */}
-                      <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
-                          OPENROUTER API KEY
-                        </label>
-                        <input
-                          value={openrouterApiKey}
-                          onChange={(e) => setOpenrouterApiKey(e.target.value)}
-                          type="password"
-                          placeholder={
-                            user?.hasOpenrouterApiKey
-                              ? "ENTER NEW KEY TO REPLACE..."
-                              : "PASTE YOUR OPENROUTER KEY..."
-                          }
-                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors"
-                        />
-                        <p className="mt-3 text-[10px] leading-5 tracking-[0.16em] text-[#737373] uppercase">
-                          {user?.hasOpenrouterApiKey
-                            ? "A key is saved. Leave blank to keep it."
-                            : "Your key is used before the shared fallback."}
-                        </p>
-                      </div>
-
-                      {/* Study goal */}
-                      <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
-                          DAILY STUDY GOAL (MINUTES)
-                        </label>
-                        <input
-                          type="number"
-                          value={studyGoal}
-                          onChange={(e) =>
-                            setStudyGoal(Math.max(1, parseInt(e.target.value) || 1))
-                          }
-                          min={1}
-                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors"
-                        />
-                      </div>
-
-                      {/* Subjects */}
-                      <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
-                          SUBJECTS
-                        </label>
-
-                        {/* Subject tags */}
-                        {subjects.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {subjects.map((subject) => (
-                              <div
-                                key={subject}
-                                className="flex items-center gap-2 border border-[#262626] px-3 py-1.5"
-                              >
-                                <span className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase">
-                                  {subject}
-                                </span>
-                                <button
-                                  onClick={() => handleRemoveSubject(subject)}
-                                  className="text-[#737373] hover:text-[#FF3D00] transition-colors"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Add subject */}
-                        <div className="flex gap-3 items-end">
-                          <input
-                            value={newSubject}
-                            onChange={(e) => setNewSubject(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleAddSubject();
-                              }
-                            }}
-                            placeholder="ADD SUBJECT..."
-                            className="flex-1 bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
-                          />
-                          <button
-                            onClick={handleAddSubject}
-                            disabled={!newSubject.trim()}
-                            className="border border-[#262626] px-4 py-2 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            ADD
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </section>
 
-                  {/* ── API KEY SETTINGS ── */}
-                  <section>
-                    <ApiKeySettings />
-                  </section>
+                  {/* ── API KEY ── */}
+                  <ApiKeySettings ref={apiKeyRef} />
 
-                  {/* ── MOBILE SAVE BUTTON (bottom of form, easier reach) ── */}
+                  {/* ── MOBILE SAVE BUTTON ── */}
                   <div className="sm:hidden pt-4 border-t border-[#262626]">
                     <PrimaryButton
                       onClick={handleSave}
-                      disabled={isSaving}
+                      disabled={isSaving || isDemo}
                       className="w-full justify-center"
                     >
                       {saved ? "SAVED" : isSaving ? "SAVING..." : "SAVE CHANGES"}

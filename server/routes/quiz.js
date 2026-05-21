@@ -4,6 +4,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const Quiz = require("../models/Quiz");
 const User = require("../models/User");
 const StudySession = require("../models/StudySession");
@@ -354,6 +355,9 @@ router.post(
   validate(generateSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const {
         subject,
         topic,
@@ -380,7 +384,7 @@ router.post(
           count,
           difficulty,
           content,
-          apiKey: req.user?.openrouterApiKey,
+          apiKey: access.apiKey,
         });
         writeCachedQuiz(cacheKey, questions);
       }

@@ -102,7 +102,7 @@ const demoLimiter = rateLimit({
 // ─── SMART AI LIMITER ─────────────────────────────────────────────────────
 // Picks the right limiter based on user type
 const dynamicAiLimiter = (req, res, next) => {
-  if (req.user?.email === 'demo@mentorai.app') {
+  if (req.user?.isDemo) {
     return demoLimiter(req, res, next);
   }
   if (req.user?.openrouterApiKey) {

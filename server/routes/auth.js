@@ -151,7 +151,9 @@ router.get("/me", async (req, res, next) => {
       return res.json({ success: true, user: null });
     }
 
-    const user = await User.findById(decoded.userId).select("-passwordHash");
+    const user = await User.findById(decoded.userId)
+      .select("-passwordHash")
+      .select("+openrouterApiKey");
     if (!user) {
       return res.json({ success: true, user: null });
     }
@@ -180,6 +182,12 @@ router.get("/me", async (req, res, next) => {
 // PATCH /api/auth/profile
 router.patch("/profile", auth, async (req, res, next) => {
   try {
+    if (req.user.isDemo) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Demo account settings cannot be changed." });
+    }
+
     const { name, subjects, studyGoalMinutes, openrouterApiKey } = req.body;
     const updates = {};
     if (name) updates.name = name;

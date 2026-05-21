@@ -5,6 +5,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/openrouter");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const { calculateSM2 } = require("../services/sm2");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
@@ -497,6 +498,9 @@ router.post(
   validate(generateSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const { text, subject, deckId } = req.body;
       const deck = await ensureDeckForGeneration(
         req.userId,
@@ -505,7 +509,7 @@ router.post(
         `${subject} Deck`,
       );
 
-      const generated = await generateCardsFromText(text, subject, req.user?.openrouterApiKey);
+      const generated = await generateCardsFromText(text, subject, access.apiKey);
       const cards = await Flashcard.insertMany(
         generated.map((card) => ({
           deckId: deck._id,
@@ -538,6 +542,9 @@ router.post(
   validate(generateFromWeakSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const { weakConcepts, subject, deckId } = req.body;
       const deck = await ensureDeckForGeneration(
         req.userId,
@@ -550,7 +557,7 @@ router.post(
         .map((concept, i) => `${i + 1}. ${concept}`)
         .join("\n")}`;
 
-      const generated = await generateCardsFromText(weakText, subject, req.user?.openrouterApiKey);
+      const generated = await generateCardsFromText(weakText, subject, access.apiKey);
       const cards = await Flashcard.insertMany(
         generated.map((card) => ({
           deckId: deck._id,
@@ -590,6 +597,9 @@ router.post(
   validate(aiSuggestSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const { weakCards } = req.body;
       const input = weakCards
         .map(
@@ -613,7 +623,7 @@ Return plain text only.`,
             content: `Weak cards:\n\n${input}`,
           },
         ],
-        { temperature: 0.4, apiKey: req.user?.openrouterApiKey },
+        { temperature: 0.4, apiKey: access.apiKey },
       );
 
       res.json({ suggestion: String(suggestion || "").trim() });

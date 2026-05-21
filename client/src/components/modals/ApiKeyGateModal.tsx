@@ -1,0 +1,60 @@
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
+
+export default function ApiKeyGateModal() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuthStore();
+  const [isDismissed, setIsDismissed] = useState(() =>
+    sessionStorage.getItem("apikey-modal-dismissed") === "true",
+  );
+
+  if (
+    !user ||
+    user.isDemo ||
+    user.hasOpenrouterApiKey ||
+    isDismissed ||
+    location.pathname === "/settings"
+  ) {
+    return null;
+  }
+
+  const dismissForSession = () => {
+    sessionStorage.setItem("apikey-modal-dismissed", "true");
+    setIsDismissed(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/95 px-4">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,61,0,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]" />
+      <div className="relative w-full max-w-xl border border-[#262626] bg-[#0A0A0A] px-5 py-6 shadow-[0_0_0_1px_rgba(255,61,0,0.08)] sm:px-8 sm:py-8">
+        <div className="space-y-4">
+          <h2 className="text-3xl font-bold tracking-tighter leading-none uppercase text-[#FAFAFA] sm:text-5xl">
+            ACTION REQUIRED
+          </h2>
+          <p className="max-w-lg text-[11px] font-bold leading-6 tracking-[0.16em] text-[#737373] uppercase sm:text-sm">
+            AI features will not work until you set your OpenRouter API key. Get a free key at openrouter.ai/keys and add it in settings.
+          </p>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
+          <button
+            type="button"
+            onClick={() => navigate("/settings")}
+            className="inline-flex items-center justify-center border border-[#FF3D00] bg-transparent px-5 py-3 text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase transition-colors hover:bg-[#FF3D00]/10"
+          >
+            SET API KEY
+          </button>
+          <button
+            type="button"
+            onClick={dismissForSession}
+            className="inline-flex items-center justify-center px-1 py-3 text-xs font-bold tracking-[0.2em] text-[#737373] uppercase transition-colors hover:text-[#FAFAFA] self-start"
+          >
+            I&apos;LL DO IT LATER
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

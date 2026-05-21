@@ -4,6 +4,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { summarizeContent, callOpenRouter } = require("../services/ai");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const Note = require("../models/Note");
 
 const router = express.Router();
@@ -180,6 +181,9 @@ router.delete("/:id/permanent", auth, async (req, res, next) => {
 // POST /api/notes/:id/summarize
 router.post("/:id/summarize", auth, dynamicAiLimiter, async (req, res, next) => {
   try {
+    const access = await requireOpenRouterAccess(req, res);
+    if (!access) return;
+
     const note = await Note.findOne({ _id: req.params.id, userId: req.userId });
     if (!note) return res.status(404).json({ error: "Note not found" });
     if (!note.content || note.content.length < 50) {
@@ -189,7 +193,7 @@ router.post("/:id/summarize", auth, dynamicAiLimiter, async (req, res, next) => 
     }
 
     const summary = await summarizeContent(note.content, "concise", {
-      apiKey: req.user?.openrouterApiKey,
+      apiKey: access.apiKey,
     });
     res.json({ summary });
   } catch (error) {
@@ -209,6 +213,9 @@ router.post(
   validate(translateSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const note = await Note.findOne({ _id: req.params.id, userId: req.userId });
       if (!note) return res.status(404).json({ error: "Note not found" });
       if (!note.content || note.content.trim().length < 10) {
@@ -229,7 +236,7 @@ Return only the translated text without extra commentary.`,
             content: note.content,
           },
         ],
-        { temperature: 0.2, apiKey: req.user?.openrouterApiKey },
+        { temperature: 0.2, apiKey: access.apiKey },
       );
 
       res.json({ translated: String(translated || "").trim(), language });

@@ -6,6 +6,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { generateFlashcards } = require("../services/ai");
+const { requireOpenRouterAccess } = require("../services/openrouterAccess");
 const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
@@ -203,6 +204,9 @@ router.post(
   validate(chatSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const {
         messages: rawMessages,
         context,
@@ -247,7 +251,7 @@ router.post(
           responseType: "stream",
           timeout: 60000,
           headers: {
-            Authorization: `Bearer ${req.user?.openrouterApiKey || process.env.OPENROUTER_API_KEY}`,
+            Authorization: `Bearer ${access.apiKey}`,
             "Content-Type": "application/json",
             "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
             "X-Title": "Mentorai Learning App",
@@ -644,9 +648,12 @@ router.post(
   validate(genFlashcardsSchema),
   async (req, res, next) => {
     try {
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       const { content, subject, count } = req.body;
       const flashcards = await generateFlashcards(content, subject, count, {
-        apiKey: req.user?.openrouterApiKey,
+        apiKey: access.apiKey,
       });
       res.json({ flashcards });
     } catch (error) {
