@@ -80,6 +80,13 @@ const createSchema = z.object({
 
 router.post("/", auth, validate(createSchema), async (req, res, next) => {
   try {
+    if (req.user.isDemo) {
+      return res.status(403).json({
+        success: false,
+        error: "Demo account cannot create notes.",
+      });
+    }
+
     const note = await Note.create({
       userId: req.userId,
       ...req.body,
@@ -119,6 +126,18 @@ const updateSchema = z.object({
 
 async function updateNoteHandler(req, res, next) {
   try {
+    const existingNote = await Note.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+    if (!existingNote) return res.status(404).json({ error: "Note not found" });
+    if (existingNote.isDemoNote) {
+      return res.status(403).json({
+        success: false,
+        error: "Demo notes are read-only.",
+      });
+    }
+
     const note = await Note.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
       req.body,
@@ -137,13 +156,22 @@ router.put("/:id", auth, validate(updateSchema), updateNoteHandler);
 // DELETE /api/notes/:id — soft delete
 router.delete("/:id", auth, async (req, res, next) => {
   try {
-    const note = await Note.findOneAndUpdate(
+    const existingNote = await Note.findOne({ _id: req.params.id, userId: req.userId });
+    if (!existingNote) return res.status(404).json({ error: "Note not found" });
+    if (existingNote.isDemoNote) {
+      return res.status(403).json({
+        success: false,
+        error: "Demo notes cannot be deleted.",
+      });
+    }
+
+    const updatedNote = await Note.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
       { isDeleted: true, deleted: true },
       { new: true },
     );
-    if (!note) return res.status(404).json({ error: "Note not found" });
-    res.json({ note, message: "Note moved to trash" });
+    if (!updatedNote) return res.status(404).json({ error: "Note not found" });
+    res.json({ note: updatedNote, message: "Note moved to trash" });
   } catch (error) {
     next(error);
   }
@@ -167,11 +195,20 @@ router.patch("/:id/restore", auth, async (req, res, next) => {
 // DELETE /api/notes/:id/permanent
 router.delete("/:id/permanent", auth, async (req, res, next) => {
   try {
-    const note = await Note.findOneAndDelete({
+    const existingNote = await Note.findOne({ _id: req.params.id, userId: req.userId });
+    if (!existingNote) return res.status(404).json({ error: "Note not found" });
+    if (existingNote.isDemoNote) {
+      return res.status(403).json({
+        success: false,
+        error: "Demo notes cannot be deleted.",
+      });
+    }
+
+    const deletedNote = await Note.findOneAndDelete({
       _id: req.params.id,
       userId: req.userId,
     });
-    if (!note) return res.status(404).json({ error: "Note not found" });
+    if (!deletedNote) return res.status(404).json({ error: "Note not found" });
     res.json({ message: "Note permanently deleted" });
   } catch (error) {
     next(error);

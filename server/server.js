@@ -23,6 +23,7 @@ const settingsRoutes = require("./routes/settings");
 const { requestLogger, errorLogger } = require("./middleware/logger");
 const { globalLimiter, loginLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
 const User = require("./models/User");
+const { seedDemoNotes } = require("./seeds/demoNotes");
 
 const app = express();
 // Trust proxy headers from Vercel/Render
@@ -48,10 +49,10 @@ async function ensureDemoAccount() {
         },
       },
     );
-    return;
+    return User.findById(existingDemo._id);
   }
 
-  await User.create({
+  const demoUser = await User.create({
     name: "Demo Account",
     email: DEMO_EMAIL,
     passwordHash,
@@ -62,6 +63,8 @@ async function ensureDemoAccount() {
     openrouterApiKey: "",
     isDemo: true,
   });
+
+  return demoUser;
 }
 
 const allowedOrigins = [
@@ -139,7 +142,8 @@ mongoose
   .connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log("Connected to MongoDB");
-    await ensureDemoAccount();
+    const demoUser = await ensureDemoAccount();
+    await seedDemoNotes(demoUser);
     console.log(`Demo account ready: ${DEMO_EMAIL}`);
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

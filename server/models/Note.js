@@ -60,6 +60,10 @@ const noteSchema = new mongoose.Schema(
       enum: ["manual", "pdf", "ai"],
       default: "manual",
     },
+    isDemoNote: {
+      type: Boolean,
+      default: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

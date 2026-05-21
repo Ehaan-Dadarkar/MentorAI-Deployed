@@ -209,6 +209,13 @@ function uploadPdfMiddleware(req, res, next) {
 // POST /api/upload/pdf
 router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res, next) => {
   try {
+    if (req.user.isDemo) {
+      return res.status(403).json({
+        success: false,
+        error: "Demo account cannot import PDFs.",
+      });
+    }
+
     // Allow longer request/response socket timeout for AI processing (3 minutes)
     try { req.setTimeout(180000); } catch (e) {}
     try { res.setTimeout(180000); } catch (e) {}

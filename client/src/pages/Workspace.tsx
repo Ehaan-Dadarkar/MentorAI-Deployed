@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Plus, Upload, Trash2 } from "lucide-react";
@@ -48,12 +49,12 @@ const PrimaryButton = ({
     <motion.div
       variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
-      className="absolute inset-x-0 bottom-0 h-[2px] bg-[#FF3D00]"
+      className="absolute inset-x-0 bottom-0 h-0.5 bg-[#FF3D00]"
     />
     <motion.div
       variants={{ initial: { scaleX: 1, originX: 1 }, hover: { scaleX: 0, originX: 1 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
-      className="absolute inset-x-0 bottom-0 h-[1px] bg-[#262626]"
+      className="absolute inset-x-0 bottom-0 h-px bg-[#262626]"
     />
   </motion.button>
 );
@@ -80,7 +81,7 @@ const GhostButton = ({
     <motion.div
       variants={{ initial: { scaleX: 0, originX: 0 }, hover: { scaleX: 1, originX: 0 } }}
       transition={{ duration: 0.4, ease: [0.25, 0, 0, 1] }}
-      className="absolute inset-x-0 bottom-0 h-[1px] bg-[#FAFAFA]"
+      className="absolute inset-x-0 bottom-0 h-px bg-[#FAFAFA]"
     />
   </motion.button>
 );
@@ -118,12 +119,15 @@ export default function Workspace() {
     fetchWorkspaceData, loadNote, createNote, saveActiveNote,
     importPdf, deleteNote, updateEditorContent,
   } = useWorkspaceStore();
+  const { user } = useAuthStore();
 
   const [titleDraft, setTitleDraft] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isApplyingEditorContentRef = useRef(false);
   const dirtyDebounceTimerRef = useRef<number | null>(null);
+  const isDemoUser = Boolean(user?.isDemo);
+  const isDemoNote = Boolean(activeNote?.isDemoNote);
 
   const editor = useEditor({
     extensions: [
@@ -148,6 +152,11 @@ export default function Workspace() {
       }, 600);
     },
   });
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(!isDemoNote);
+  }, [editor, isDemoNote]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { void fetchWorkspaceData(); }, 180);
@@ -186,6 +195,7 @@ export default function Workspace() {
   }, [activeNote, editorContent, isDirty, isSaving, saveActiveNote, titleDraft]);
 
   const handleCreateNote = async () => {
+    if (isDemoUser) return;
     try {
       await createNote({ title: "UNTITLED NOTE", content: "", subject: "General" });
       setIsDirty(false);
@@ -195,6 +205,10 @@ export default function Workspace() {
   const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (isDemoUser) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     if (guardOpenRouterAction()) {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -297,21 +311,29 @@ export default function Workspace() {
                   </div>
 
                   {/* ↓ row on mobile, column from sm */}
-                  <motion.div variants={fadeUp} className="flex flex-row sm:flex-col gap-3 sm:gap-4 sm:min-w-[200px]">
+                  <motion.div variants={fadeUp} className="flex flex-row sm:flex-col gap-3 sm:gap-4 sm:min-w-50">
                     <PrimaryButton
                       onClick={handleCreateNote}
+                      disabled={isDemoUser}
                       className="flex-1 sm:flex-none justify-center sm:justify-start"
                     >
-                      <span className="hidden sm:inline">NEW NOTE</span>
-                      <span className="sm:hidden">NEW</span>
-                      <Plus className="w-4 h-4 ml-1" />
+                      <span className="hidden sm:inline">
+                        {isDemoUser ? "READ ONLY" : "NEW NOTE"}
+                      </span>
+                      <span className="sm:hidden">{isDemoUser ? "READ ONLY" : "NEW"}</span>
+                      {!isDemoUser && <Plus className="w-4 h-4 ml-1" />}
                     </PrimaryButton>
                     <SecondaryButton
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isImportingPdf}
+                      disabled={isImportingPdf || isDemoUser}
                       className="flex-1 sm:flex-none justify-center"
                     >
-                      {isImportingPdf ? (
+                      {isDemoUser ? (
+                        <>
+                          <span className="hidden sm:inline">READ ONLY</span>
+                          <span className="sm:hidden">READ ONLY</span>
+                        </>
+                      ) : isImportingPdf ? (
                         <>
                           <span className="hidden sm:inline">IMPORTING...</span>
                           <span className="sm:hidden">...</span>
@@ -336,7 +358,7 @@ export default function Workspace() {
                   <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
                     ARCHIVES
                   </h2>
-                  <div className="h-[1px] flex-1 bg-[#262626]" />
+                  <div className="h-px flex-1 bg-[#262626]" />
                   <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
                     {notes.length.toString().padStart(2, "0")}
                     <span className="hidden sm:inline"> ITEMS</span>
@@ -374,7 +396,7 @@ export default function Workspace() {
                         key={note._id}
                         variants={fadeUp}
                         // ↓ reduced padding and min-h on mobile
-                        className="group relative border-b border-r border-[#262626] p-5 sm:p-8 cursor-pointer overflow-hidden flex flex-col min-h-[200px] sm:min-h-[260px] lg:min-h-[300px]"
+                        className="group relative border-b border-r border-[#262626] p-5 sm:p-8 cursor-pointer overflow-hidden flex flex-col min-h-50 sm:min-h-65 lg:min-h-75"
                         onClick={() => handleSelectNote(note._id)}
                       >
                         <div className="absolute inset-0 bg-[#FAFAFA] origin-bottom scale-y-0 transition-transform duration-500 ease-[0.25,0,0,1] group-hover:scale-y-100 z-0" />
@@ -444,7 +466,7 @@ export default function Workspace() {
                   </AnimatePresence>
                   {/* Save button — visible when dirty and not currently saving */}
                   <AnimatePresence>
-                    {isDirty && !isSaving && (
+                    {!isDemoNote && isDirty && !isSaving && (
                       <motion.div
                         initial={{ opacity: 0, x: 8 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -475,20 +497,31 @@ export default function Workspace() {
                   </AnimatePresence>
 
                   {/* Dot shown only while a save is in flight */}
-                  {isDirty && isSaving && (
+                  {!isDemoNote && isDirty && isSaving && (
                     <span
-                      className="w-[6px] h-[6px] rounded-full bg-[#FF3D00] shrink-0"
+                      className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0"
                       title="Unsaved changes"
                     />
                   )}
-                  <GhostButton
-                    onClick={handleMoveToTrash}
-                    className="hover:text-[#FF3D00] px-2 sm:px-4"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </GhostButton>
+                  {!isDemoNote && (
+                    <GhostButton
+                      onClick={handleMoveToTrash}
+                      className="hover:text-[#FF3D00] px-2 sm:px-4"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </GhostButton>
+                  )}
                 </div>
               </div>
+
+              {isDemoNote && (
+                <div className="flex items-center gap-3 border border-[#FF3D00]/30 bg-[#FF3D00]/5 px-4 py-3 mb-6">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0" />
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                    DEMO NOTE — READ ONLY. REGISTER A FREE ACCOUNT TO CREATE AND EDIT YOUR OWN NOTES.
+                  </p>
+                </div>
+              )}
 
               {/* ── NOTE HEADER ── */}
               <div className="mb-8 sm:mb-12">
@@ -498,8 +531,12 @@ export default function Workspace() {
                   value={titleDraft}
                   onChange={(e) => setTitleDraft(e.target.value)}
                   onBlur={handleTitleBlur}
+                  readOnly={isDemoNote}
                   placeholder="UNTITLED NOTE"
-                  className="w-full bg-transparent text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none uppercase leading-tight"
+                  className={cn(
+                    "w-full bg-transparent text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none uppercase leading-tight",
+                    isDemoNote && "cursor-not-allowed",
+                  )}
                 />
                 <div className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                   <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />

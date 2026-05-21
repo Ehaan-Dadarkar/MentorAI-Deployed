@@ -61,6 +61,7 @@ export interface Note {
   updatedAt: string;
   isDeleted?: boolean;
   deleted?: boolean;
+  isDemoNote?: boolean;
 }
 
 // ─── Quiz ───────────────────────────────────────────────
