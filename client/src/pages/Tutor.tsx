@@ -19,6 +19,7 @@ import {
 
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { cn } from "@/lib/utils";
 import { useConversationStore } from "@/store/conversationStore";
@@ -390,6 +391,7 @@ export default function Tutor() {
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
+    if (guardOpenRouterAction()) return;
     setInput("");
     await sendMessage(trimmed);
   };
@@ -814,7 +816,10 @@ export default function Tutor() {
                                 {message.followUps.map((followUp) => (
                                   <button
                                     key={`${message.id}-${followUp}`}
-                                    onClick={() => void sendMessage(followUp)}
+                                    onClick={() => {
+                                      if (guardOpenRouterAction()) return;
+                                      void sendMessage(followUp);
+                                    }}
                                     className="border border-[#262626] px-3 py-1.5 text-[9px] sm:text-[10px] font-bold tracking-[0.1em] text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors"
                                   >
                                     {followUp}

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { openApiKeyGate } from "@/lib/apiKeyGate";
 import type { Quiz, ChatMessage } from "@/types";
 
 export type QuizDifficulty = "easy" | "medium" | "hard";
@@ -113,7 +114,12 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       }));
 
       return quiz;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isGenerating: false });
+        return Promise.reject(error);
+      }
       set({ isGenerating: false });
       throw error;
     }
@@ -241,7 +247,12 @@ export const useTutorStore = create<TutorState>((set, get) => ({
         messages: [...state.messages, assistantMessage],
         isLoading: false,
       }));
-    } catch {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isLoading: false });
+        return;
+      }
       set({ isLoading: false });
     }
   },

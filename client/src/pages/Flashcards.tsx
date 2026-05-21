@@ -7,6 +7,7 @@ import type { Note } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { useFlashcardStore } from "@/store/flashcardStore";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { cn } from "@/lib/utils";
@@ -269,6 +270,7 @@ export default function Flashcards() {
   };
 
   const handleGenerate = async () => {
+    if (guardOpenRouterAction()) return;
     setError(null);
     let text = "";
     if (tab === "paste") {

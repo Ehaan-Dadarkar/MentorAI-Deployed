@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { openApiKeyGate } from "@/lib/apiKeyGate";
 
 export type TutorRole = "user" | "assistant";
 export type TutorMode = "explain" | "socratic";
@@ -341,6 +342,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     };
 
     const nextMessages = [...state.messages, userMessage, assistantMessage];
+    const previousMessages = state.messages;
 
     set({
       messages: nextMessages,
@@ -378,6 +380,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           mode: get().mode,
         }),
       });
+
+      if (response.status === 402) {
+        openApiKeyGate(true);
+        throw Object.assign(new Error("No API key configured"), { status: 402 });
+      }
 
       if (!response.ok || !response.body) {
         throw new Error(`Request failed (${response.status})`);
@@ -501,19 +508,23 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }
 
       await get().loadSessions();
-    } catch (error) {
-      set((prev) => ({
-        messages: prev.messages.map((msg) =>
-          msg.id === assistantId
-            ? {
-                ...msg,
-                content:
-                  msg.content ||
-                  "I couldn’t complete that response. Please try again.",
-              }
-            : msg,
-        ),
-      }));
+    } catch (error: any) {
+      if (error?.status === 402) {
+        set({ messages: previousMessages });
+      } else {
+        set((prev) => ({
+          messages: prev.messages.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  content:
+                    msg.content ||
+                    "I couldn’t complete that response. Please try again.",
+                }
+              : msg,
+          ),
+        }));
+      }
       console.error("Tutor streaming error:", error);
     } finally {
       set({ isStreaming: false });

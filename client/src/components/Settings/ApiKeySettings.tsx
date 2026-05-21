@@ -143,7 +143,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
                 </span>
               ) : (
                 <span className="text-sm font-bold tracking-widest text-[#737373] uppercase">
-                  NO PERSONAL KEY — USING SHARED FALLBACK
+                  NO KEY SAVED — AI FEATURES DISABLED
                 </span>
               )}
             </div>

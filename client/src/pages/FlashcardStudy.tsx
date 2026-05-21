@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Play, Eye, BrainCircuit } from "lucide-react";
 import { useFlashcardStore, type ReviewGrade } from "@/store/flashcardStore";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { cn } from "@/lib/utils";
 
 // ── UI Primitives ───────────────────────────────────────────
@@ -187,6 +188,7 @@ export default function FlashcardStudy() {
     const pullWeakSuggestion = async () => {
       if (!sessionResults?.endedAt) return;
       if (deckId === "due") return;
+      if (guardOpenRouterAction()) return;
       await fetchWeakCards(deckId);
       const weak = useFlashcardStore.getState().weakCards;
       if (weak.length === 0) return;

@@ -4,12 +4,10 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET current API key status (masked)
-// ✅ FIX: req.user already has openrouterApiKey from auth middleware
-// — no extra DB query needed, and avoids the _id mismatch entirely
 router.get('/api-key', auth, async (req, res) => {
   try {
-    const key = req.user.openrouterApiKey;
+    const user = await User.findById(req.user._id).select('+openrouterApiKey');
+    const key = user?.openrouterApiKey;
 
     if (!key) {
       return res.json({ success: true, hasApiKey: false, maskedKey: null });

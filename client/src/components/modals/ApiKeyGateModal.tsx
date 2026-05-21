@@ -52,9 +52,26 @@ export default function ApiKeyGateModal({
           <h2 className="text-3xl font-bold tracking-tighter leading-none uppercase text-[#FAFAFA] sm:text-5xl">
             ACTION REQUIRED
           </h2>
-          <p className="max-w-lg text-[11px] font-bold leading-6 tracking-[0.16em] text-[#737373] uppercase sm:text-sm">
-            AI features will not work until you set your OpenRouter API key. Get a free key at openrouter.ai/keys and add it in settings.
-          </p>
+          <div className="max-w-lg space-y-4 text-[11px] font-bold leading-6 tracking-[0.16em] text-[#737373] uppercase sm:text-sm">
+            <p>
+              AI FEATURES ARE DISABLED UNTIL YOU ADD YOUR OPENROUTER API KEY.
+              THIS INCLUDES THE AI TUTOR, FLASHCARD GENERATION, QUIZ GENERATION,
+              NOTE SUMMARIZATION, VOICE RECALL, AND KNOWLEDGE GRAPH.
+            </p>
+            <p>
+              GET A FREE KEY AT{" "}
+              <a
+                href="https://openrouter.ai/keys"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#FF3D00] underline underline-offset-4"
+              >
+                OPENROUTER.AI/KEYS
+              </a>
+              {" "}
+              — IT TAKES 30 SECONDS.
+            </p>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">

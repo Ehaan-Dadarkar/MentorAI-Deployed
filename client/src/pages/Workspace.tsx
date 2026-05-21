@@ -7,6 +7,7 @@ import { useWorkspaceStore } from "@/store/workspaceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Plus, Upload, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 
 // ── Animation Config ────────────────────────────────────────
 const easing = [0.25, 0, 0, 1] as const;
@@ -194,6 +195,10 @@ export default function Workspace() {
   const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (guardOpenRouterAction()) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     try {
       await importPdf(file);
       setIsDirty(false);

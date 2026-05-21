@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { openApiKeyGate } from "@/lib/apiKeyGate";
 
 export interface Question {
   question: string;
@@ -131,7 +132,12 @@ export const useVoiceRecallStore = create<VoiceRecallState>((set, get) => ({
         step: "session",
         isGenerating: false,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isGenerating: false });
+        return;
+      }
       console.error("Failed to generate questions:", error);
       set({ isGenerating: false });
     }
@@ -167,7 +173,12 @@ export const useVoiceRecallStore = create<VoiceRecallState>((set, get) => ({
         step: "feedback",
         isEvaluating: false,
       }));
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isEvaluating: false });
+        return;
+      }
       console.error("Failed to evaluate answer:", error);
       set({ isEvaluating: false });
     }
@@ -243,7 +254,12 @@ export const useVoiceRecallStore = create<VoiceRecallState>((set, get) => ({
         sessionId: data.sessionId,
         isSaving: false,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isSaving: false });
+        return;
+      }
       console.error("Failed to save session:", error);
       set({ isSaving: false });
     }

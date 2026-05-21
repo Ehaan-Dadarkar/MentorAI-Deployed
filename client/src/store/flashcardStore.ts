@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { openApiKeyGate } from "@/lib/apiKeyGate";
 import type { Deck, Flashcard, Note } from "@/types";
 
 export type ReviewGrade = "missed" | "almost" | "got_it";
@@ -465,7 +466,11 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
     try {
       const { data } = await api.post("/flashcards/ai-suggest", { weakCards });
       set({ aiSuggestion: data.suggestion || null });
-    } catch {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        return;
+      }
       set({ aiSuggestion: null });
     }
   },

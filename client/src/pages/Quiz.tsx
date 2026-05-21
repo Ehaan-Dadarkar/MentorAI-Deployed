@@ -17,6 +17,7 @@ import api from "@/lib/axios";
 import type { Note, Quiz } from "@/types";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { useQuizStore, type QuizDifficulty } from "@/store/appStore";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { cn } from "@/lib/utils";
@@ -303,6 +304,7 @@ export default function QuizPage() {
   };
 
   const handleGenerate = async () => {
+    if (guardOpenRouterAction()) return;
     setSourceError(null);
     const normalizedDeckName = deckName.trim();
     if (!normalizedDeckName) { setSourceError("Enter a name for the quiz deck."); return; }

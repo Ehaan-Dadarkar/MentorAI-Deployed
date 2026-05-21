@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 
 // ── Animation Config ────────────────────────────────────────
@@ -218,7 +219,10 @@ export default function KnowledgeGraph() {
 
   const isEmpty = !isLoading && !error && nodes.length === 0;
 
-  useEffect(() => { fetchGraph({ useAi: true }); }, [fetchGraph]);
+  useEffect(() => {
+    if (guardOpenRouterAction()) return;
+    fetchGraph({ useAi: true });
+  }, [fetchGraph]);
   useEffect(() => { setSearchInput(query); }, [query]);
 
   useEffect(() => {
@@ -774,7 +778,10 @@ export default function KnowledgeGraph() {
             {/* ↓ controls row: stacks on mobile, column from md */}
             <motion.div variants={fadeUp} className="flex flex-row sm:flex-col gap-3 sm:gap-4 sm:min-w-[200px]">
               <PrimaryButton
-                onClick={() => fetchGraph({ useAi: true, force: true })}
+                onClick={() => {
+                  if (guardOpenRouterAction()) return;
+                  fetchGraph({ useAi: true, force: true });
+                }}
                 className="flex-1 sm:flex-none justify-center sm:justify-start"
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
@@ -921,7 +928,10 @@ export default function KnowledgeGraph() {
                 <div className="flex-1 border border-[#FF3D00] p-8 sm:p-16 flex flex-col items-center justify-center text-center bg-[#FF3D00]/5 min-h-[300px]">
                   <p className="text-base sm:text-lg font-bold tracking-tight text-[#FF3D00] uppercase mb-2">ERROR</p>
                   <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">{error}</p>
-                  <PrimaryButton onClick={() => fetchGraph({ force: true })}>
+                  <PrimaryButton onClick={() => {
+                    if (guardOpenRouterAction()) return;
+                    fetchGraph({ force: true });
+                  }}>
                     RETRY <ArrowRight className="w-4 h-4 ml-1" />
                   </PrimaryButton>
                 </div>
@@ -931,7 +941,10 @@ export default function KnowledgeGraph() {
                   <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8 max-w-sm">
                     NO GRAPH DATA CURRENTLY AVAILABLE. INITIATE STUDY SESSIONS.
                   </p>
-                  <PrimaryButton onClick={() => fetchGraph({ force: true })}>
+                  <PrimaryButton onClick={() => {
+                    if (guardOpenRouterAction()) return;
+                    fetchGraph({ force: true });
+                  }}>
                     REFRESH <ArrowRight className="w-4 h-4 ml-1" />
                   </PrimaryButton>
                 </div>

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { openApiKeyGate } from "@/lib/apiKeyGate";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphMeta,
@@ -66,7 +67,13 @@ export const useKnowledgeGraphStore = create<KnowledgeGraphState>((set, get) => 
         isLoading: false,
         error: null,
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 402) {
+        openApiKeyGate(true);
+        set({ isLoading: false, error: null });
+        return;
+      }
+
       const fallback = "Failed to load knowledge graph";
       const message =
         typeof error === "object" && error && "message" in error

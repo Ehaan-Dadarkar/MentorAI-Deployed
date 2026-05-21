@@ -5,6 +5,7 @@ import RateLimitBanner from "@/components/RateLimitBanner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, RotateCw, Play, ArrowRight, Search, Pencil } from "lucide-react";
 import axios from "@/lib/axios";
+import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { cn } from "@/lib/utils";
 import { useVoiceRecallStore } from "@/store/voiceRecallStore";
 import { useRateLimitStore } from "@/store/rateLimitStore";
@@ -243,7 +244,9 @@ function SetupScreen() {
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
   const handleStart = async () => {
-    if (selectedNoteId) await startSession();
+    if (!selectedNoteId) return;
+    if (guardOpenRouterAction()) return;
+    await startSession();
   };
 
   return (
