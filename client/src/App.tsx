@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
+import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 import { useNexusStore } from "@/store/nexusStore";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { NexusCommandPalette } from "@/components/NexusCommandPalette";
@@ -142,11 +143,22 @@ function AppLayout() {
 }
 
 export default function App() {
-  const { checkAuth } = useAuthStore();
+  const location = useLocation();
+  const { user, isLoading, checkAuth } = useAuthStore();
+  const openApiKeyModal = useApiKeyModalStore((state) => state.open);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user || user.isDemo || user.hasOpenrouterApiKey) return;
+    if (location.pathname === "/settings") return;
+    if (sessionStorage.getItem("apikey-modal-dismissed") === "true") return;
+
+    openApiKeyModal();
+  }, [isLoading, location.pathname, openApiKeyModal, user]);
 
   return (
     <Suspense

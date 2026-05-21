@@ -1,21 +1,34 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 
-export default function ApiKeyGateModal() {
+interface ApiKeyGateModalProps {
+  ignoreSessionStorage?: boolean;
+}
+
+export default function ApiKeyGateModal({
+  ignoreSessionStorage,
+}: ApiKeyGateModalProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
+  const { isOpen, ignoreSessionStorage: storeIgnoreSessionStorage, close } =
+    useApiKeyModalStore();
   const [isDismissed, setIsDismissed] = useState(() =>
     sessionStorage.getItem("apikey-modal-dismissed") === "true",
   );
 
+  const shouldIgnoreSessionStorage =
+    ignoreSessionStorage ?? storeIgnoreSessionStorage;
+
   if (
+    !isOpen ||
     !user ||
     user.isDemo ||
     user.hasOpenrouterApiKey ||
-    isDismissed ||
-    location.pathname === "/settings"
+    location.pathname === "/settings" ||
+    (!shouldIgnoreSessionStorage && isDismissed)
   ) {
     return null;
   }
@@ -23,6 +36,12 @@ export default function ApiKeyGateModal() {
   const dismissForSession = () => {
     sessionStorage.setItem("apikey-modal-dismissed", "true");
     setIsDismissed(true);
+    close();
+  };
+
+  const handleNavigateToSettings = () => {
+    close();
+    navigate("/settings");
   };
 
   return (
@@ -41,7 +60,7 @@ export default function ApiKeyGateModal() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
           <button
             type="button"
-            onClick={() => navigate("/settings")}
+            onClick={handleNavigateToSettings}
             className="inline-flex items-center justify-center border border-[#FF3D00] bg-transparent px-5 py-3 text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase transition-colors hover:bg-[#FF3D00]/10"
           >
             SET API KEY
