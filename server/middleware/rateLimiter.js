@@ -20,8 +20,8 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Never rate limit health checks or auth/me
-    return req.path === '/api/auth/me' || req.path === '/api/health';
+    // Health checks and session metadata are public and should not require auth.
+    return ['/', '/health', '/healthz', '/api/health', '/api/auth/me'].includes(req.path);
   },
   message: {
     success: false,

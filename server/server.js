@@ -122,8 +122,17 @@ app.use("/api/knowledge-graph", knowledgeGraphRoutes);
 app.use("/api/settings", settingsRoutes);
 
 // Health check
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+app.get(["/health", "/healthz", "/api/health"], (_req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+
+  res.status(dbConnected ? 200 : 503).json({
+    status: dbConnected ? "ok" : "degraded",
+    app: "mentorai-backend",
+    environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
+    uptime: Math.round(process.uptime()),
+    database: dbConnected ? "connected" : "disconnected",
+  });
 });
 
 // Error handling middleware
