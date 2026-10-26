@@ -119,9 +119,9 @@ router.post(
 // ─────────────────────────────────────────────────────────
 
 const evaluateSchema = z.object({
-  question: z.string().min(1),
-  correctKeyPoints: z.array(z.string()),
-  spokenAnswer: z.string(),
+  question: z.string().min(1).max(2000),
+  correctKeyPoints: z.array(z.string().max(500)).max(50),
+  spokenAnswer: z.string().max(12000),
   confidence: z.number().min(1).max(5),
 });
 

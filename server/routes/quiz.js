@@ -341,11 +341,11 @@ async function createQuizDeckFromQuestions({
 
 // POST /api/quiz/generate
 const generateSchema = z.object({
-  subject: z.string().min(1),
-  topic: z.string().optional(),
+  subject: z.string().min(1).max(200),
+  topic: z.string().max(200).optional(),
   count: z.union([z.literal(5), z.literal(10), z.literal(20)]),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  content: z.string().min(10).optional(),
+  content: z.string().min(10).max(12000).optional(),
   deckName: z.string().min(1).max(200).optional(),
   createFlashcardDeck: z.boolean().optional().default(false),
 });

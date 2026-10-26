@@ -34,12 +34,13 @@ const chatSchema = z.object({
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string(),
+        content: z.string().max(12000),
       }),
     )
-    .min(1),
-  context: z.string().optional(),
-  noteContext: z.string().optional(),
+    .min(1)
+    .max(50),
+  context: z.string().max(12000).optional(),
+  noteContext: z.string().max(12000).optional(),
   activeSessionId: z.string().optional(),
   mode: z.enum(["explain", "socratic"]).optional().default("explain"),
 });
@@ -656,8 +657,8 @@ router.patch(
 );
 
 const genFlashcardsSchema = z.object({
-  content: z.string().min(10),
-  subject: z.string().min(1),
+  content: z.string().min(10).max(12000),
+  subject: z.string().min(1).max(200),
   count: z.number().min(1).max(30).optional().default(10),
 });
 

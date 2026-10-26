@@ -487,8 +487,8 @@ router.patch(
 // ── POST /api/flashcards/generate ───────────────────────────
 
 const generateSchema = z.object({
-  text: z.string().min(10),
-  subject: z.string().min(1),
+  text: z.string().min(10).max(12000),
+  subject: z.string().min(1).max(200),
   deckId: z.string().min(1).optional(),
 });
 
@@ -531,8 +531,8 @@ router.post(
 // ── POST /api/flashcards/generate-from-weak ─────────────────
 
 const generateFromWeakSchema = z.object({
-  weakConcepts: z.array(z.string().min(1)).min(1).max(50),
-  subject: z.string().min(1).default("General"),
+  weakConcepts: z.array(z.string().min(1).max(500)).min(1).max(50),
+  subject: z.string().min(1).max(200).default("General"),
   deckId: z.string().min(1).optional(),
 });
 

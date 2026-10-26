@@ -8,6 +8,17 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen3.5:2b";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_MODEL || "meta-llama/llama-3.1-8b-instruct";
+
+// AI/data M1/M6: bounded provider calls. Non-streaming calls time out
+// after 60 s; OpenRouter calls retry up to 2 extra times, but only on
+// 429/5xx responses (a timeout or dropped connection is NOT retried:
+// the provider may already have processed it, so a retry could
+// double-charge). AI input text is capped at 12 000 chars, matching
+// the note-import cap, as defence in depth behind the zod schemas.
+const OPENROUTER_TIMEOUT_MS = 60000;
+const OLLAMA_TIMEOUT_MS = 60000;
+const OPENROUTER_MAX_RETRIES = 2;
+const AI_INPUT_MAX_CHARS = 12000;
 const USE_OPENROUTER_IN_PRODUCTION = process.env.NODE_ENV === "production";
 
 if (process.env.NODE_ENV !== "production") {
@@ -21,6 +32,36 @@ if (process.env.NODE_ENV !== "production") {
   console.log("OpenRouter Model (JSON tasks):", OPENROUTER_MODEL);
 }
 
+  const truncateAiInput = (text) =>
+    typeof text === "string" ? text.slice(0, AI_INPUT_MAX_CHARS) : text;
+
+  const isRetryableProviderError = (error) => {
+    const status = error.response?.status;
+    return status === 429 || (typeof status === "number" && status >= 500);
+  };
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Runs postFn (one axios.post) with bounded retries on 429/5xx only.
+  const postWithProviderRetries = async (postFn) => {
+    let lastError;
+    for (let attempt = 0; attempt <= OPENROUTER_MAX_RETRIES; attempt++) {
+      try {
+        return await postFn();
+      } catch (error) {
+        lastError = error;
+        if (
+          attempt === OPENROUTER_MAX_RETRIES ||
+          !isRetryableProviderError(error)
+        ) {
+          throw error;
+        }
+        await sleep(500 * 2 ** attempt);
+      }
+    }
+    throw lastError;
+  };
+
   const callOpenRouter = async (messages, options = {}) => {
     const apiKey = options.apiKey;
 
@@ -29,7 +70,7 @@ if (process.env.NODE_ENV !== "production") {
     }
 
     try {
-      const response = await axios.post(
+      const response = await postWithProviderRetries(() => axios.post(
         `${OPENROUTER_BASE_URL}/chat/completions`,
         {
           model: options.model || OPENROUTER_MODEL,
@@ -38,6 +79,7 @@ if (process.env.NODE_ENV !== "production") {
           max_tokens: options.maxTokens ?? 2048,
         },
         {
+          timeout: OPENROUTER_TIMEOUT_MS,
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
@@ -45,7 +87,7 @@ if (process.env.NODE_ENV !== "production") {
             "X-Title": "Mentorai Learning App",
           },
         },
-      );
+      ));
 
       // Metering hook: the provider usage block used to be discarded
       // here, which made per-user spend invisible (AI/data M9). The
@@ -96,6 +138,7 @@ if (process.env.NODE_ENV !== "production") {
           },
         },
         {
+          timeout: OLLAMA_TIMEOUT_MS,
           headers: {
             "Content-Type": "application/json",
           },
@@ -160,7 +203,7 @@ if (process.env.NODE_ENV !== "production") {
       },
       {
         role: "user",
-        content: `Subject: ${subject}\n\nContent:\n${content}`,
+        content: `Subject: ${subject}\n\nContent:\n${truncateAiInput(content)}`,
       },
     ];
 
@@ -211,7 +254,7 @@ if (process.env.NODE_ENV !== "production") {
       },
       {
         role: "user",
-        content: `Subject: ${subject}\n\nContent:\n${content}`,
+        content: `Subject: ${subject}\n\nContent:\n${truncateAiInput(content)}`,
       },
     ];
 
@@ -257,7 +300,7 @@ if (process.env.NODE_ENV !== "production") {
       },
       {
         role: "user",
-        content: `Subject: ${subject}\n\nContent:\n${content}`,
+        content: `Subject: ${subject}\n\nContent:\n${truncateAiInput(content)}`,
       },
     ];
 
@@ -295,7 +338,7 @@ if (process.env.NODE_ENV !== "production") {
     Title: ${noteTitle}
 
     Content:
-    ${noteContent}
+    ${truncateAiInput(noteContent)}
 
     Return ONLY a valid JSON array, no extra text, no markdown:
     [{ "question": "string", "keyPoints": ["string"], "difficulty": "easy|medium|hard" }]`,
@@ -440,7 +483,7 @@ if (process.env.NODE_ENV !== "production") {
         role: "user",
         content: `Question: ${question}
     Key points expected: ${correctKeyPoints.join(", ")}
-    Student's spoken answer: "${spokenAnswer}"
+    Student's spoken answer: "${truncateAiInput(spokenAnswer)}"
     Confidence before answering: ${confidence}/5`,
       },
     ];
@@ -474,7 +517,7 @@ if (process.env.NODE_ENV !== "production") {
       },
       {
         role: "user",
-        content,
+        content: truncateAiInput(content),
       },
     ];
 
