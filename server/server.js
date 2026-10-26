@@ -78,8 +78,7 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://mentorai.vercel.app',
   'https://mentorai-prod.vercel.app',
-  /\.vercel\.app$/,
-];
+].filter(Boolean);
 
 // Middleware
 app.use(helmet());
@@ -90,9 +89,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      const isAllowed = allowedOrigins.some(o =>
-        typeof o === 'string' ? o === origin : o.test(origin)
-      );
+      const isAllowed = allowedOrigins.includes(origin);
       if (isAllowed) {
         callback(null, true);
       } else {
