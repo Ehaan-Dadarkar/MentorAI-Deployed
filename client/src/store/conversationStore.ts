@@ -11,6 +11,9 @@ export interface TutorMessage {
   content: string;
   followUps?: string[];
   createdAt: string;
+  // Set when a send failed with 402: the message stays in the thread,
+  // marked unsent, so it can be retried after a key/credits are added.
+  failed?: boolean;
 }
 
 export interface TutorSessionStub {
@@ -66,6 +69,7 @@ interface ConversationState {
   clearNotes: () => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  retryMessage: (id: string) => Promise<void>;
   saveFlashcard: (
     question: string,
     answer: string,
@@ -511,7 +515,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       await get().loadSessions();
     } catch (error: any) {
       if (error?.status === 402) {
-        set({ messages: previousMessages });
+        // Keep the failed message in the thread, marked unsent, and
+        // drop the empty assistant placeholder. The old code restored
+        // previousMessages, deleting the message from both the thread
+        // and the (already cleared) input. The api-key gate is opened
+        // by the 402 branch above, so the user can add a key/credits
+        // and retry from the thread.
+        set({
+          messages: [...previousMessages, { ...userMessage, failed: true }],
+        });
       } else {
         set((prev) => ({
           messages: prev.messages.map((msg) =>
@@ -530,6 +542,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     } finally {
       set({ isStreaming: false });
     }
+  },
+
+  retryMessage: async (id) => {
+    const { messages, isStreaming } = get();
+    if (isStreaming) return;
+    const failed = messages.find((msg) => msg.id === id);
+    if (!failed || failed.role !== "user" || !failed.failed) return;
+    // The failed message never reached the server, so removing it and
+    // re-sending appends it at the end of the thread in retry order.
+    // A second 402 marks the re-sent message failed again, as above.
+    set({ messages: messages.filter((msg) => msg.id !== id) });
+    await get().sendMessage(failed.content);
   },
 
   saveFlashcard: async (question, answer, subject) => {

@@ -356,6 +356,7 @@ export default function Tutor() {
     clearNotes,
     deleteSession,
     sendMessage,
+    retryMessage,
   } = useConversationStore();
 
   const [input, setInput] = useState("");
@@ -809,6 +810,24 @@ export default function Tutor() {
                               </div>
                             </div>
 
+                            {message.role === "user" &&
+                              message.failed && (
+                              <div className="mt-3 flex flex-wrap items-center gap-3">
+                                <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                                  NOT SENT — ADD A KEY OR CREDITS, THEN RETRY
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    if (guardOpenRouterAction()) return;
+                                    void retryMessage(message.id);
+                                  }}
+                                  disabled={isStreaming}
+                                  className="border border-[#FF3D00] px-3 py-1.5 text-[9px] sm:text-[10px] font-bold tracking-[0.1em] text-[#FAFAFA] uppercase hover:bg-[#FF3D00] transition-colors disabled:opacity-50"
+                                >
+                                  RETRY
+                                </button>
+                              </div>
+                            )}
                             {message.role === "assistant" &&
                               message.followUps?.length &&
                               !isStreaming ? (
