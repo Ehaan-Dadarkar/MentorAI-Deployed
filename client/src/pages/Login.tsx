@@ -5,8 +5,6 @@ import { Mail, Lock, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-const DEMO_EMAIL = "demo@mentorai.app";
-const DEMO_PASSWORD = "Demo@1234";
 
 const easing = [0.25, 0, 0, 1] as const;
 
@@ -45,7 +43,7 @@ const PrimaryButton = ({
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, demoLogin } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -55,7 +53,7 @@ export default function Login() {
     setError("");
     setIsLoading(true);
     try {
-      await login(DEMO_EMAIL, DEMO_PASSWORD);
+      await demoLogin();
       navigate("/");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };

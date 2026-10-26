@@ -127,6 +127,52 @@ router.post(
   },
 );
 
+// POST /api/auth/demo-login
+// Logs in as the demo account without the client knowing any password.
+// This is deliberately passwordless on the client side: the demo account
+// is a public try-it account, and its password must never ship in the
+// client bundle (see Frontend C1). The account is safe to expose this
+// way only because every restricted action is guarded server-side on
+// the isDemo flag (profile/settings changes, note creation, PDF import).
+// Rate-limited like password login; returns 503 if no demo account
+// exists yet (it is created at server boot via ensureDemoAccount).
+router.post("/demo-login", loginLimiter, async (_req, res, next) => {
+  try {
+    const demoEmail = process.env.DEMO_EMAIL || "demo@mentorai.app";
+    const user = await User.findOne({
+      email: demoEmail,
+      isDemo: true,
+    }).select("+openrouterApiKey");
+    if (!user) {
+      return res.status(503).json({
+        success: false,
+        message: "Demo account is not available",
+      });
+    }
+
+    const token = generateToken(user._id);
+    setTokenCookie(res, token);
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subjects: user.subjects,
+        studyGoalMinutes: user.studyGoalMinutes,
+        streak: user.streak,
+        weakTopics: user.weakTopics,
+        isDemo: user.isDemo,
+        hasOpenrouterApiKey: Boolean(user.openrouterApiKey),
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/auth/logout
 router.post("/logout", (_req, res) => {
   res.clearCookie("token", {
