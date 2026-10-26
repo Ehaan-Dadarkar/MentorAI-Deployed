@@ -8,10 +8,14 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const User = require('../models/User');
 
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'demo@mentorai.app';
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'Demo@1234';
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 
 const createDemoAccount = async () => {
   try {
+    if (!DEMO_PASSWORD) {
+      console.error('DEMO_PASSWORD is not set.');
+      process.exit(1);
+    }
     await mongoose.connect(process.env.MONGODB_URI || process.env.MONGODB_URL);
     console.log('Connected to MongoDB');
 

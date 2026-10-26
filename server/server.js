@@ -32,10 +32,14 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
 const DEMO_EMAIL = process.env.DEMO_EMAIL || "demo@mentorai.app";
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "Demo@1234";
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD;
 
 async function ensureDemoAccount() {
   const existingDemo = await User.findOne({ email: DEMO_EMAIL });
+  if (!DEMO_PASSWORD) {
+    console.warn("DEMO_PASSWORD is not set; leaving demo account password unchanged.");
+    return existingDemo;
+  }
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
 
   if (existingDemo) {
@@ -154,7 +158,7 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB");
     const demoUser = await ensureDemoAccount();
-    await seedDemoNotes(demoUser);
+    if (demoUser) await seedDemoNotes(demoUser);
     console.log(`Demo account ready: ${DEMO_EMAIL}`);
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
