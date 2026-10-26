@@ -1,13 +1,29 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
-// ─── KEY GENERATOR ────────────────────────────────────────────────────────
-// Uses real IP from proxy headers, falls back to req.ip
+// ─── KEY GENERATORS ───────────────────────────────────────────────────────
+// SECURITY (rate-limit keying fix, Oct 2026): never hand-parse
+// X-Forwarded-For or X-Real-IP here. Either header is client-forgeable,
+// so a key built from it lets any client rotate its limiter bucket at
+// will. server.js sets `trust proxy` (1 hop: Render), so Express already
+// resolves the proxy-aware client address into req.ip — use that, and
+// only that, for unauthenticated buckets.
+//
+// Authenticated buckets are keyed by user id, not by IP at all:
+// auth.js sets req.userId from the verified JWT, and req.user from
+// user.toObject() — which has `_id`, NOT the Mongoose `.id` virtual
+// (virtuals are off by default in toObject()), so the previous
+// `req.user?.id` key was always undefined and every authed limiter
+// silently fell back to the forgeable IP key. Keying by req.userId
+// (with req.user._id as fallback) is what makes the demo limiter
+// (5 AI requests/hour) actually per demo account.
 const getKey = (req) => {
-  const forwarded = req.headers['x-forwarded-for'];
-  const rawIp = forwarded
-    ? forwarded.split(',')[0].trim()
-    : req.headers['x-real-ip'] || req.ip || 'unknown';
-  return ipKeyGenerator(rawIp);
+  return ipKeyGenerator(req.ip || 'unknown');
+};
+
+const getAuthedKey = (req) => {
+  const userId = req.userId || req.user?._id;
+  if (userId) return `user:${String(userId)}`;
+  return getKey(req);
 };
 
 // ─── TIER 1: Global limiter ───────────────────────────────────────────────
@@ -50,11 +66,7 @@ const loginLimiter = rateLimit({
 const aiLimiterStrict = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => {
-    // Use user ID if authenticated, otherwise use IP
-    if (req.user?.id) return req.user.id;
-    return getKey(req);
-  },
+  keyGenerator: getAuthedKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -69,10 +81,7 @@ const aiLimiterStrict = rateLimit({
 const aiLimiterRelaxed = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 500,
-  keyGenerator: (req) => {
-    if (req.user?.id) return req.user.id;
-    return getKey(req);
-  },
+  keyGenerator: getAuthedKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -86,10 +95,7 @@ const aiLimiterRelaxed = rateLimit({
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => {
-    if (req.user?.id) return req.user.id;
-    return getKey(req);
-  },
+  keyGenerator: getAuthedKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
