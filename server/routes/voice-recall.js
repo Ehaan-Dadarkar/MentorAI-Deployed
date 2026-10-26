@@ -9,6 +9,7 @@ const {
   generateVoiceRecallQuestions,
   evaluateVoiceAnswer,
 } = require("../services/ai");
+const { usageCallbackFor } = require("../services/usage");
 const VoiceSession = require("../models/VoiceSession");
 const Note = require("../models/Note");
 const User = require("../models/User");
@@ -98,7 +99,7 @@ router.post(
         truncatedContent,
         count,
         "meta-llama/llama-3.1-8b-instruct",
-        { apiKey: access.apiKey },
+        { apiKey: access.apiKey, onUsage: usageCallbackFor(req.userId, "voice-recall-questions") },
       );
 
       res.json({

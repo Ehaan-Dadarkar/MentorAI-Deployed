@@ -6,6 +6,7 @@ const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { extractTextFromPDF } = require("../services/pdfParser");
 const { callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
 
 const router = express.Router();
@@ -270,6 +271,7 @@ Return only valid JSON.`,
           model: "meta-llama/llama-3.1-8b-instruct",
           temperature: 0.3,
           apiKey: access.apiKey,
+          onUsage: usageCallbackFor(req.userId, "upload-structure"),
         }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error("AI processing timeout")), 60000),

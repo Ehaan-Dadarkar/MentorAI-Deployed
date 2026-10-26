@@ -3,6 +3,7 @@ const auth = require("../middleware/auth");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { usageCallbackFor } = require("../services/usage");
 const Quiz = require("../models/Quiz");
 const VoiceSession = require("../models/VoiceSession");
 const Deck = require("../models/Deck");
@@ -438,7 +439,7 @@ function addEdge(edges, edgeSet, edge) {
   edges.push(edge);
 }
 
-async function generateAiConceptLinks(conceptNodes, apiKey) {
+async function generateAiConceptLinks(conceptNodes, apiKey, onUsage) {
   if (!apiKey) {
     return { edges: [], usedAI: false };
   }
@@ -485,6 +486,7 @@ Rules:
     temperature: 0.2,
     maxTokens: 900,
     apiKey,
+    onUsage,
   });
 
   const parsed = parseAiJson(raw);
@@ -824,6 +826,7 @@ async function buildNoteCentricGraph({ notes, quizzes, voiceSessions, deckStatsM
       const aiResult = await generateAiConceptLinks(
         conceptNodes,
         access.apiKey,
+        usageCallbackFor(req.userId, "knowledge-graph"),
       );
       usedAI = aiResult.usedAI;
       for (const aiEdge of aiResult.edges) {

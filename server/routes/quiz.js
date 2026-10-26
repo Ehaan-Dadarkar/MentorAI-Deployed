@@ -5,6 +5,7 @@ const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { usageCallbackFor } = require("../services/usage");
 const Quiz = require("../models/Quiz");
 const User = require("../models/User");
 const StudySession = require("../models/StudySession");
@@ -160,6 +161,7 @@ async function generateQuestionsWithRetry({
   difficulty,
   content,
   apiKey,
+  onUsage,
 }) {
   const firstPrompt = buildQuizPrompt({
     subject,
@@ -170,7 +172,7 @@ async function generateQuestionsWithRetry({
     strict: false,
   });
 
-  const first = await callOpenRouter(firstPrompt, { temperature: 0.4, apiKey });
+  const first = await callOpenRouter(firstPrompt, { temperature: 0.4, apiKey, onUsage });
   try {
     return parseQuestionsFromModel(first);
   } catch {
@@ -182,7 +184,7 @@ async function generateQuestionsWithRetry({
       content,
       strict: true,
     });
-    const second = await callOpenRouter(secondPrompt, { temperature: 0.2, apiKey });
+    const second = await callOpenRouter(secondPrompt, { temperature: 0.2, apiKey, onUsage });
     return parseQuestionsFromModel(second);
   }
 }
@@ -385,6 +387,7 @@ router.post(
           difficulty,
           content,
           apiKey: access.apiKey,
+          onUsage: usageCallbackFor(req.userId, "quiz"),
         });
         writeCachedQuiz(cacheKey, questions);
       }

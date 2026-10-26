@@ -7,6 +7,7 @@ const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { generateFlashcards } = require("../services/ai");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { recordUsage, normalizeUsage, usageCallbackFor } = require("../services/usage");
 const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
@@ -243,6 +244,7 @@ router.post(
         model: TUTOR_MODEL,
         messages: [systemPrompt, ...cleanedMessages],
         stream: true,
+        stream_options: { include_usage: true },
         temperature: mode === "socratic" ? 0.2 : 0.6,
         top_p: 0.9,
         max_tokens: mode === "socratic" ? 200 : 600,
@@ -266,6 +268,7 @@ router.post(
       );
 
       let buffer = "";
+      let streamUsage = null;
       let fullResponse = "";
       let sentLength = 0;
       let closed = false;
@@ -297,6 +300,7 @@ router.post(
 
           try {
             const parsed = JSON.parse(dataStr);
+            if (parsed.usage) streamUsage = parsed.usage;
             const delta = parsed?.choices?.[0]?.delta?.content || "";
             if (!delta) continue;
 
@@ -361,6 +365,14 @@ router.post(
         if (closed) return;
 
         tokenTracker.log();
+        if (streamUsage) {
+          await recordUsage({
+            ...normalizeUsage(streamUsage, TUTOR_MODEL),
+            provider: "openrouter",
+            userId: req.userId,
+            feature: "tutor-chat",
+          });
+        }
 
         const { content, followUps } = parseFollowUps(fullResponse);
         const safeContent = content || "(No response generated)";
@@ -662,6 +674,7 @@ router.post(
       const { content, subject, count } = req.body;
       const flashcards = await generateFlashcards(content, subject, count, {
         apiKey: access.apiKey,
+        onUsage: usageCallbackFor(req.userId, "flashcards"),
       });
       res.json({ flashcards });
     } catch (error) {

@@ -5,6 +5,7 @@ const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { summarizeContent, callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
 
 const router = express.Router();
@@ -231,6 +232,7 @@ router.post("/:id/summarize", auth, dynamicAiLimiter, async (req, res, next) => 
 
     const summary = await summarizeContent(note.content, "concise", {
       apiKey: access.apiKey,
+      onUsage: usageCallbackFor(req.userId, "notes-summarize"),
     });
     res.json({ summary });
   } catch (error) {
@@ -273,7 +275,7 @@ Return only the translated text without extra commentary.`,
             content: note.content,
           },
         ],
-        { temperature: 0.2, apiKey: access.apiKey },
+        { temperature: 0.2, apiKey: access.apiKey, onUsage: usageCallbackFor(req.userId, "notes-translate") },
       );
 
       res.json({ translated: String(translated || "").trim(), language });

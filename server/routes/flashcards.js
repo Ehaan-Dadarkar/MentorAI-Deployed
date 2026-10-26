@@ -6,6 +6,7 @@ const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/openrouter");
 const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { usageCallbackFor } = require("../services/usage");
 const { calculateSM2 } = require("../services/sm2");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
@@ -101,7 +102,7 @@ function parseFlashcardsFromAi(raw) {
   throw new Error("Failed to parse flashcards JSON from AI response");
 }
 
-async function generateCardsFromText(text, subject, apiKey) {
+async function generateCardsFromText(text, subject, apiKey, onUsage) {
   const messages = [
     {
       role: "system",
@@ -123,7 +124,7 @@ Format:
     },
   ];
 
-  const raw = await callOpenRouter(messages, { temperature: 0.4, apiKey });
+  const raw = await callOpenRouter(messages, { temperature: 0.4, apiKey, onUsage });
   const cards = parseFlashcardsFromAi(raw).filter(
     (card) => card.question && card.answer,
   );
@@ -509,7 +510,7 @@ router.post(
         `${subject} Deck`,
       );
 
-      const generated = await generateCardsFromText(text, subject, access.apiKey);
+      const generated = await generateCardsFromText(text, subject, access.apiKey, usageCallbackFor(req.userId, "flashcards"));
       const cards = await Flashcard.insertMany(
         generated.map((card) => ({
           deckId: deck._id,
@@ -557,7 +558,7 @@ router.post(
         .map((concept, i) => `${i + 1}. ${concept}`)
         .join("\n")}`;
 
-      const generated = await generateCardsFromText(weakText, subject, access.apiKey);
+      const generated = await generateCardsFromText(weakText, subject, access.apiKey, usageCallbackFor(req.userId, "flashcards"));
       const cards = await Flashcard.insertMany(
         generated.map((card) => ({
           deckId: deck._id,
@@ -623,7 +624,7 @@ Return plain text only.`,
             content: `Weak cards:\n\n${input}`,
           },
         ],
-        { temperature: 0.4, apiKey: access.apiKey },
+        { temperature: 0.4, apiKey: access.apiKey, onUsage: usageCallbackFor(req.userId, "flashcards-suggestion") },
       );
 
       res.json({ suggestion: String(suggestion || "").trim() });

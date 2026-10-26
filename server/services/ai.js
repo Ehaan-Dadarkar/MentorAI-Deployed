@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { normalizeUsage } = require("./usage");
 
 const OLLAMA_BASE_URL = (
   process.env.OLLAMA_URL || "http://localhost:11434"
@@ -46,6 +47,21 @@ if (process.env.NODE_ENV !== "production") {
         },
       );
 
+      // Metering hook: the provider usage block used to be discarded
+      // here, which made per-user spend invisible (AI/data M9). The
+      // callback is fire-and-forget and guarded so a metering failure
+      // can never break the AI response itself.
+      if (typeof options.onUsage === "function") {
+        try {
+          const usage = normalizeUsage(
+            response.data.usage,
+            response.data.model || options.model || OPENROUTER_MODEL,
+          );
+          options.onUsage({ ...usage, provider: "openrouter" });
+        } catch {
+          // Metering must never fail the request.
+        }
+      }
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error(
@@ -151,6 +167,7 @@ if (process.env.NODE_ENV !== "production") {
     const response = await callOpenRouter(messages, {
       temperature: 0.5,
       apiKey: options.apiKey,
+      onUsage: options.onUsage,
     });
     try {
       const parsed = JSON.parse(response);
@@ -201,6 +218,7 @@ if (process.env.NODE_ENV !== "production") {
     const response = await callOpenRouter(messages, {
       temperature: 0.5,
       apiKey: options.apiKey,
+      onUsage: options.onUsage,
     });
     try {
       const parsed = JSON.parse(response);
@@ -246,6 +264,7 @@ if (process.env.NODE_ENV !== "production") {
     const response = await callOpenRouter(messages, {
       temperature: 0.5,
       apiKey: options.apiKey,
+      onUsage: options.onUsage,
     });
     try {
       const parsed = JSON.parse(response);
@@ -291,6 +310,7 @@ if (process.env.NODE_ENV !== "production") {
       temperature: 0.3,
       model,
       apiKey: options.apiKey,
+      onUsage: options.onUsage,
     });
     try {
       if (process.env.NODE_ENV !== "production") {
