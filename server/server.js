@@ -1,6 +1,5 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const path = require("path");
@@ -72,35 +71,14 @@ async function ensureDemoAccount() {
   return demoUser;
 }
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.CLIENT_URL,
-  'https://mentorai.vercel.app',
-  'https://mentorai-prod.vercel.app',
-].filter(Boolean);
+const { corsMiddleware } = require("./middleware/cors");
 
 // Middleware
 app.use(helmet());
 // Global limiter - skip handled inside the limiter (e.g. /api/auth/me)
 app.use(globalLimiter);
 app.use(rateLimitInfoMiddleware);
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      const isAllowed = allowedOrigins.includes(origin);
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }),
-);
+app.use(corsMiddleware);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

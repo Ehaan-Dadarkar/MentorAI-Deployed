@@ -7,7 +7,7 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "create-demo": "node scripts/createDemoAccount.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",
