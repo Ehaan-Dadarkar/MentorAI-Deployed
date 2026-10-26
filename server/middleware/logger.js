@@ -1,13 +1,23 @@
 const { randomUUID } = require("crypto");
 
-const SENSITIVE_KEYS = new Set([
+// Substring match, not an exact-name list: the leak this fixes was two
+// real field names (`apiKey`, `openrouterApiKey`) that no exact list
+// contained. Any key containing one of these fragments is treated as
+// secret-bearing and redacted. Over-masking a benign field (e.g. one
+// merely containing "key") is the safe failure direction for a logger.
+const SENSITIVE_SUBSTRINGS = [
   "password",
+  "secret",
   "token",
-  "authorization",
+  "auth",
   "cookie",
-  "openrouter_api_key",
-  "jwt_secret",
-]);
+  "key",
+];
+
+function isSensitiveKey(key) {
+  const lower = String(key).toLowerCase();
+  return SENSITIVE_SUBSTRINGS.some((fragment) => lower.includes(fragment));
+}
 
 function maskSensitive(value, depth = 0) {
   if (value == null) {
@@ -25,7 +35,7 @@ function maskSensitive(value, depth = 0) {
   if (typeof value === "object") {
     const safe = {};
     for (const [key, entry] of Object.entries(value)) {
-      if (SENSITIVE_KEYS.has(String(key).toLowerCase())) {
+      if (isSensitiveKey(key)) {
         safe[key] = "[Redacted]";
       } else {
         safe[key] = maskSensitive(entry, depth + 1);
@@ -110,4 +120,5 @@ function errorLogger(err, req, _res, next) {
 module.exports = {
   requestLogger,
   errorLogger,
+  maskSensitive,
 };
