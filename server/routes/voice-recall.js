@@ -149,12 +149,21 @@ router.post(
         });
       }
 
+      // Key gate (AI/data C2): without this, production evaluation
+      // reached OpenRouter with no key and 500'd for every user.
+      // Demo users get the shared env key here; users with no key
+      // get a 402 instead of a 500. The empty-answer skip above
+      // stays first: it spends no AI call, so it needs no key.
+      const access = await requireOpenRouterAccess(req, res);
+      if (!access) return;
+
       // Evaluate via OpenRouter
       const evaluation = await evaluateVoiceAnswer(
         question,
         correctKeyPoints,
         spokenAnswer,
         confidence,
+        { apiKey: access.apiKey, onUsage: usageCallbackFor(req.userId, "voice-recall-evaluate") },
       );
 
       res.json({

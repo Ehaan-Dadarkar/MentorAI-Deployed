@@ -352,6 +352,7 @@ if (process.env.NODE_ENV !== "production") {
     question,
     expectedConcepts,
     userResponse,
+    options = {},
   ) => {
     const messages = [
       {
@@ -375,7 +376,7 @@ if (process.env.NODE_ENV !== "production") {
       },
     ];
 
-    const response = await callOllama(messages, { temperature: 0.3 });
+    const response = await callOllama(messages, { temperature: 0.3, ...options });
     try {
       return JSON.parse(response);
     } catch {
@@ -393,6 +394,7 @@ if (process.env.NODE_ENV !== "production") {
     correctKeyPoints,
     spokenAnswer,
     confidence,
+    options = {},
   ) => {
     const messages = [
       {
@@ -443,7 +445,7 @@ if (process.env.NODE_ENV !== "production") {
       },
     ];
 
-    const response = await callOllama(messages, { temperature: 0.4 });
+    const response = await callOllama(messages, { temperature: 0.4, ...options });
     try {
       const parsed = JSON.parse(response);
       return parsed;
@@ -480,7 +482,7 @@ if (process.env.NODE_ENV !== "production") {
   };
 
   // ─── Extract Weak Topics ────────────────────────────────
-  const extractWeakTopics = async (sessionData) => {
+  const extractWeakTopics = async (sessionData, options = {}) => {
     const messages = [
       {
         role: "system",
@@ -498,7 +500,7 @@ if (process.env.NODE_ENV !== "production") {
       },
     ];
 
-    const response = await callOllama(messages, { temperature: 0.3 });
+    const response = await callOllama(messages, { temperature: 0.3, ...options });
     try {
       return JSON.parse(response);
     } catch {
