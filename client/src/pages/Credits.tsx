@@ -78,9 +78,12 @@ export default function Credits() {
         )}
 
         <p className="mt-4 border border-[#262626] px-5 py-4 text-sm text-[#737373]">
-          Note: buying credits banks a balance, but no AI feature spends
-          credits yet — the credit gate is the next slice. Nothing is
-          charged for AI calls today beyond your own OpenRouter key.
+          How credits work: if you have your own OpenRouter key, AI
+          calls use it and never touch your balance. If you do not,
+          each AI request spends 1 credit and runs on the shared key
+          instead — that 1-credit price is a placeholder while the
+          final price is decided, not a final rate. Demo accounts
+          cannot buy credits and are never charged.
         </p>
 
         {(notice || cancelledNotice) && (
