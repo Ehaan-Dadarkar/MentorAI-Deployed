@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("node:crypto");
 const { z } = require("zod");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
@@ -24,13 +25,14 @@ function normalizeSubject(subject) {
 function contentFingerprint(content) {
   const value = String(content || "").trim();
   if (!value) return "";
-  const head = value.slice(0, 120);
-  const tail = value.slice(-120);
-  return `${value.length}:${head}:${tail}`;
+  // Hash the full content: the old length:head:tail fingerprint
+  // collided for contents differing only in the middle.
+  return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-function buildCacheKey({ subject, topic, difficulty, count, content }) {
+function buildCacheKey({ userId, subject, topic, difficulty, count, content }) {
   return JSON.stringify({
+    userId: userId == null ? null : String(userId),
     subject: normalizeSubject(subject).toLowerCase(),
     topic: String(topic || "").trim().toLowerCase(),
     difficulty,
@@ -371,6 +373,7 @@ router.post(
       } = req.body;
       const normalizedSubject = normalizeSubject(subject);
       const cacheKey = buildCacheKey({
+        userId: req.userId,
         subject,
         topic,
         difficulty,
@@ -634,5 +637,8 @@ router.delete("/:id", auth, async (req, res, next) => {
     next(error);
   }
 });
+
+router.buildCacheKey = buildCacheKey;
+router.contentFingerprint = contentFingerprint;
 
 module.exports = router;
