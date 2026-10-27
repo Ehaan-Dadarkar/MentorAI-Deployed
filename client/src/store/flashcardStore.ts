@@ -366,96 +366,104 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
 
   generateCards: async (text, subject, deckId) => {
     set({ isGenerating: true });
-    const { data } = await api.post("/flashcards/generate", {
-      text,
-      subject,
-      deckId,
-    });
+    try {
+      const { data } = await api.post("/flashcards/generate", {
+        text,
+        subject,
+        deckId,
+      });
 
-    const generatedCards: Flashcard[] = data.cards || [];
-    const generatedDeck: DeckWithStats = data.deck;
+      const generatedCards: Flashcard[] = data.cards || [];
+      const generatedDeck: DeckWithStats = data.deck;
 
-    set((state) => {
-      const existingDeck = state.decks.find((d) => d._id === generatedDeck._id);
-      const nextDecks = existingDeck
-        ? state.decks.map((d) =>
-            d._id === generatedDeck._id
+      set((state) => {
+        const existingDeck = state.decks.find((d) => d._id === generatedDeck._id);
+        const nextDecks = existingDeck
+          ? state.decks.map((d) =>
+              d._id === generatedDeck._id
+                ? {
+                    ...d,
+                    ...generatedDeck,
+                    cardCount: (d.cardCount || 0) + generatedCards.length,
+                  }
+                : d,
+            )
+          : [generatedDeck, ...state.decks];
+
+        return {
+          isGenerating: false,
+          decks: nextDecks,
+          currentDeck:
+            state.currentDeck?._id === generatedDeck._id
               ? {
-                  ...d,
+                  ...(state.currentDeck || generatedDeck),
                   ...generatedDeck,
-                  cardCount: (d.cardCount || 0) + generatedCards.length,
+                  cardCount:
+                    (state.currentDeck?.cardCount || 0) + generatedCards.length,
                 }
-              : d,
-          )
-        : [generatedDeck, ...state.decks];
+              : state.currentDeck,
+          cards:
+            state.currentDeck?._id === generatedDeck._id
+              ? [...state.cards, ...generatedCards]
+              : state.cards,
+        };
+      });
 
-      return {
-        isGenerating: false,
-        decks: nextDecks,
-        currentDeck:
-          state.currentDeck?._id === generatedDeck._id
-            ? {
-                ...(state.currentDeck || generatedDeck),
-                ...generatedDeck,
-                cardCount:
-                  (state.currentDeck?.cardCount || 0) + generatedCards.length,
-              }
-            : state.currentDeck,
-        cards:
-          state.currentDeck?._id === generatedDeck._id
-            ? [...state.cards, ...generatedCards]
-            : state.cards,
-      };
-    });
-
-    return { deck: generatedDeck, cards: generatedCards };
+      return { deck: generatedDeck, cards: generatedCards };
+    } finally {
+      set({ isGenerating: false });
+    }
   },
 
   generateFromWeak: async (weakConcepts, subject, deckId) => {
     set({ isGenerating: true });
-    const { data } = await api.post("/flashcards/generate-from-weak", {
-      weakConcepts,
-      subject,
-      deckId,
-    });
+    try {
+      const { data } = await api.post("/flashcards/generate-from-weak", {
+        weakConcepts,
+        subject,
+        deckId,
+      });
 
-    const generatedCards: Flashcard[] = data.cards || [];
-    const generatedDeck: DeckWithStats = data.deck;
+      const generatedCards: Flashcard[] = data.cards || [];
+      const generatedDeck: DeckWithStats = data.deck;
 
-    set((state) => {
-      const existingDeck = state.decks.find((d) => d._id === generatedDeck._id);
-      const nextDecks = existingDeck
-        ? state.decks.map((d) =>
-            d._id === generatedDeck._id
+      set((state) => {
+        const existingDeck = state.decks.find((d) => d._id === generatedDeck._id);
+        const nextDecks = existingDeck
+          ? state.decks.map((d) =>
+              d._id === generatedDeck._id
+                ? {
+                    ...d,
+                    ...generatedDeck,
+                    cardCount: (d.cardCount || 0) + generatedCards.length,
+                  }
+                : d,
+            )
+          : [generatedDeck, ...state.decks];
+
+        return {
+          isGenerating: false,
+          decks: nextDecks,
+          currentDeck:
+            state.currentDeck?._id === generatedDeck._id
               ? {
-                  ...d,
+                  ...(state.currentDeck || generatedDeck),
                   ...generatedDeck,
-                  cardCount: (d.cardCount || 0) + generatedCards.length,
+                  cardCount:
+                    (state.currentDeck?.cardCount || 0) + generatedCards.length,
                 }
-              : d,
-          )
-        : [generatedDeck, ...state.decks];
+              : state.currentDeck,
+          cards:
+            state.currentDeck?._id === generatedDeck._id
+              ? [...state.cards, ...generatedCards]
+              : state.cards,
+        };
+      });
 
-      return {
-        isGenerating: false,
-        decks: nextDecks,
-        currentDeck:
-          state.currentDeck?._id === generatedDeck._id
-            ? {
-                ...(state.currentDeck || generatedDeck),
-                ...generatedDeck,
-                cardCount:
-                  (state.currentDeck?.cardCount || 0) + generatedCards.length,
-              }
-            : state.currentDeck,
-        cards:
-          state.currentDeck?._id === generatedDeck._id
-            ? [...state.cards, ...generatedCards]
-            : state.cards,
-      };
-    });
-
-    return { deck: generatedDeck, cards: generatedCards };
+      return { deck: generatedDeck, cards: generatedCards };
+    } finally {
+      set({ isGenerating: false });
+    }
   },
 
   // ── Analytics & AI actions ────────────────────────────────
