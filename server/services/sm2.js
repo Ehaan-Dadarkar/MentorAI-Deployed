@@ -1,6 +1,15 @@
+const MIN_EASE_FACTOR = 1.3;
+const MAX_EASE_FACTOR = 2.5;
+const DEFAULT_EASE_FACTOR = 2.5;
+const MAX_INTERVAL_DAYS = 365;
+
+function finiteOr(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
 function normalizeGrade(grade) {
   if (typeof grade === "number") {
-    if (grade < 0 || grade > 5) {
+    if (!Number.isFinite(grade) || grade < 0 || grade > 5) {
       throw new Error("grade must be between 0 and 5");
     }
     return grade;
@@ -27,9 +36,20 @@ function calculateSM2({
 }) {
   const numericGrade = normalizeGrade(grade);
 
-  let nextEaseFactor = easeFactor;
-  let nextInterval = interval;
-  let nextRepetitions = repetitions;
+  // Audit M11: sanitise stored inputs before any arithmetic, so a NaN or
+  // non-finite value saved on a card can never poison the next review.
+  // Non-finite inputs fall back to the defaults; ease factor is clamped
+  // to [1.3, 2.5] and repetitions floored to a non-negative integer.
+  const startEaseFactor = Math.min(
+    MAX_EASE_FACTOR,
+    Math.max(MIN_EASE_FACTOR, finiteOr(easeFactor, DEFAULT_EASE_FACTOR)),
+  );
+  const startInterval = Math.max(0, Math.floor(finiteOr(interval, 1)));
+  const startRepetitions = Math.max(0, Math.floor(finiteOr(repetitions, 0)));
+
+  let nextEaseFactor = startEaseFactor;
+  let nextInterval = startInterval;
+  let nextRepetitions = startRepetitions;
 
   // If grade < 3 (failed), reset progress and schedule for immediate review
   if (numericGrade < 3) {
@@ -56,6 +76,17 @@ function calculateSM2({
 
     nextRepetitions += 1;
   }
+
+  // Audit M11: cap the schedule. Without this, repeated perfect
+  // recalls multiply the interval by the ease factor without bound
+  // (intervals exploding into years) and push the ease factor past
+  // its starting value. The cap only bites on cards that would
+  // otherwise be scheduled more than a year out.
+  nextEaseFactor = Math.min(
+    MAX_EASE_FACTOR,
+    Math.max(MIN_EASE_FACTOR, nextEaseFactor),
+  );
+  nextInterval = Math.min(MAX_INTERVAL_DAYS, Math.max(1, nextInterval));
 
   const nextReview = new Date();
   nextReview.setHours(0, 0, 0, 0);
