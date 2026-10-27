@@ -128,7 +128,23 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// Connect to MongoDB and start server
+// Start listening first, then connect to MongoDB in the background:
+// /health must stay reachable exactly when MongoDB is down (the
+// audit's point), so a failed or slow connection must neither
+// prevent listen nor kill the process. The health endpoint already
+// reports 503 "degraded" while disconnected, which is what a
+// platform health check needs to tell "process up, database down"
+// apart from "process dead". Data routes still fail without a
+// database, as before; only the process lifecycle changes.
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Later disconnects are logged, not fatal, for the same reason.
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB connection error:", err);
+});
+
 mongoose
   .connect(MONGO_URI)
   .then(async () => {
@@ -136,13 +152,9 @@ mongoose
     const demoUser = await ensureDemoAccount();
     if (demoUser) await seedDemoNotes(demoUser);
     console.log(`Demo account ready: ${DEMO_EMAIL}`);
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
-    process.exit(1);
+    console.error("MongoDB connection error: server continues without a database; /health reports degraded:", err);
   });
 
 module.exports = app;
