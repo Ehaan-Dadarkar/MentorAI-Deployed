@@ -8,6 +8,7 @@ const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { generateFlashcards } = require("../services/ai");
 const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { recordUsage, normalizeUsage, usageCallbackFor } = require("../services/usage");
+const { buildMessagesSnapshot } = require("../services/tutorSnapshot");
 const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
@@ -387,26 +388,19 @@ router.post(
             .reverse()
             .find((message) => message.role === "user");
 
-          const rawSnapshot = [
-            ...messages,
-            {
-              role: "assistant",
-              content: safeContent,
-              followUps,
-              createdAt: new Date(),
-            },
-          ];
-
-          const cleanSnapshot = rawSnapshot.filter(
-            (m) => m.content && m.content.trim().length > 0,
-          );
+          const messagesSnapshot = buildMessagesSnapshot(messages, {
+            role: "assistant",
+            content: safeContent,
+            followUps,
+            createdAt: new Date(),
+          });
 
           const baseUpdate = {
             promptPreview: (lastUserMessage?.content || "").slice(0, 240),
             responsePreview: safeContent.slice(0, 400),
             followUps,
             messageCount: messages.length,
-            messagesSnapshot: cleanSnapshot,
+            messagesSnapshot,
           };
 
           let summary;
@@ -449,6 +443,7 @@ router.post(
             `event: complete\ndata: ${JSON.stringify({
               content: safeContent,
               followUps,
+              sessionSaveFailed: true,
             })}\n\n`,
           );
         }
