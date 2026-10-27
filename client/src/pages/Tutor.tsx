@@ -9,6 +9,7 @@ import {
   Loader2,
   Pencil,
   Send,
+  Square,
   SlidersHorizontal,
   Trash2,
   User,
@@ -357,6 +358,7 @@ export default function Tutor() {
     clearNotes,
     deleteSession,
     sendMessage,
+    stopStreaming,
     retryMessage,
   } = useConversationStore();
 
@@ -891,12 +893,18 @@ export default function Tutor() {
                     className="w-full bg-transparent border-b border-[#262626] py-2 text-xs sm:text-sm text-[#FAFAFA] placeholder:text-[#737373] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase resize-none min-h-[40px]"
                   />
                   <PrimaryButton
-                    onClick={() => void handleSend()}
-                    disabled={!input.trim() || isStreaming}
+                    onClick={() => {
+                      if (isStreaming) stopStreaming();
+                      else void handleSend();
+                    }}
+                    disabled={!isStreaming && !input.trim()}
                     className="shrink-0 px-3 sm:px-6"
                   >
                     {isStreaming ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <>
+                        <span className="hidden sm:inline">STOP </span>
+                        <Square className="w-4 h-4" />
+                      </>
                     ) : (
                       <>
                         <span className="hidden sm:inline">SEND </span>

@@ -70,6 +70,7 @@ interface ConversationState {
   clearNotes: () => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  stopStreaming: () => void;
   retryMessage: (id: string) => Promise<void>;
   saveFlashcard: (
     question: string,
@@ -98,6 +99,41 @@ function stripHtml(html = "") {
     .trim();
 }
 
+// Tutor SSE stream control (Frontend M5): a single in-flight stream at a
+// time. The controller lets the user stop a hung stream; the watchdog
+// aborts it if no chunk arrives - 90 s to the first byte (Render cold
+// start + first token can be slow) and 45 s of inactivity after that.
+// A generation counter keeps an old stream's cleanup from touching a
+// newer stream started after a conversation reset.
+let streamController: AbortController | null = null;
+let streamWatchdog: ReturnType<typeof setTimeout> | null = null;
+let streamStopReason: "stopped" | "timed-out" | null = null;
+let streamGotFirstChunk = false;
+let streamGeneration = 0;
+
+const STREAM_FIRST_BYTE_TIMEOUT_MS = 90000;
+const STREAM_INACTIVITY_TIMEOUT_MS = 45000;
+
+function clearStreamWatchdog() {
+  if (streamWatchdog !== null) {
+    clearTimeout(streamWatchdog);
+    streamWatchdog = null;
+  }
+}
+
+function armStreamWatchdog(generation: number) {
+  clearStreamWatchdog();
+  const timeoutMs = streamGotFirstChunk
+    ? STREAM_INACTIVITY_TIMEOUT_MS
+    : STREAM_FIRST_BYTE_TIMEOUT_MS;
+  streamWatchdog = setTimeout(() => {
+    if (streamGeneration === generation && streamController) {
+      streamStopReason = "timed-out";
+      streamController.abort();
+    }
+  }, timeoutMs);
+}
+
 export const useConversationStore = create<ConversationState>((set, get) => ({
   context: "",
   mode: "explain",
@@ -118,7 +154,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   setActiveSessionId: (id) => set({ activeSessionId: id }),
   setActiveSessionName: (name) => set({ activeSessionName: name }),
 
-  newConversation: () =>
+  newConversation: () => {
+    // A stream in flight belongs to the old thread: abort it so its
+    // tokens cannot land in the new conversation.
+    streamStopReason = "stopped";
+    streamController?.abort();
     set({
       messages: [],
       selectedNoteIds: [],
@@ -127,7 +167,14 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       activeSessionName: null,
       isStreaming: false,
       sessionSaveFailed: false,
-    }),
+    });
+  },
+
+  stopStreaming: () => {
+    if (!get().isStreaming) return;
+    streamStopReason = "stopped";
+    streamController?.abort();
+  },
 
   loadSessions: async () => {
     try {
@@ -375,9 +422,16 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     const requestSessionId = state.activeSessionId || undefined;
     const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
+    const streamGen = ++streamGeneration;
+    streamController = new AbortController();
+    streamStopReason = null;
+    streamGotFirstChunk = false;
+    armStreamWatchdog(streamGen);
+
     try {
       const response = await fetch(`${apiUrl}/api/tutor/chat`, {
         method: "POST",
+        signal: streamController.signal,
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
@@ -506,6 +560,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         const { done, value } = await reader.read();
         if (done) break;
 
+        // Any chunk proves the stream is alive: the first chunk moves
+        // the watchdog from the 90 s first-byte budget to the 45 s
+        // inactivity budget.
+        if (!streamGotFirstChunk) streamGotFirstChunk = true;
+        armStreamWatchdog(streamGen);
+
         buffer += decoder.decode(value, { stream: true });
 
         let splitIndex = buffer.indexOf("\n\n");
@@ -523,7 +583,34 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
       await get().loadSessions();
     } catch (error: any) {
-      if (error?.status === 402) {
+      const aborted =
+        error?.name === "AbortError" || streamController?.signal.aborted === true;
+      if (aborted) {
+        // Stopped by the user (or by a conversation reset): keep any
+        // partial answer, drop an empty placeholder. A watchdog
+        // timeout that produced nothing is a failure, not a stop, so
+        // it keeps the usual fallback text instead.
+        if (streamStopReason === "timed-out") {
+          set((prev) => ({
+            messages: prev.messages.map((msg) =>
+              msg.id === assistantId
+                ? {
+                    ...msg,
+                    content:
+                      msg.content ||
+                      "I couldn’t complete that response. Please try again.",
+                  }
+                : msg,
+            ),
+          }));
+        } else {
+          set((prev) => ({
+            messages: prev.messages.filter(
+              (msg) => !(msg.id === assistantId && !msg.content),
+            ),
+          }));
+        }
+      } else if (error?.status === 402) {
         // Keep the failed message in the thread, marked unsent, and
         // drop the empty assistant placeholder. The old code restored
         // previousMessages, deleting the message from both the thread
@@ -547,8 +634,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           ),
         }));
       }
-      console.error("Tutor streaming error:", error);
+      if (!aborted) {
+        console.error("Tutor streaming error:", error);
+      }
     } finally {
+      // Only this stream's generation may clear the shared control
+      // state: a newer stream started after a conversation reset
+      // keeps its own controller and watchdog.
+      if (streamGeneration === streamGen) {
+        clearStreamWatchdog();
+        streamController = null;
+        streamStopReason = null;
+      }
       set({ isStreaming: false });
     }
   },
