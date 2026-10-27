@@ -21,7 +21,7 @@ const knowledgeGraphRoutes = require("./routes/knowledge-graph");
 const settingsRoutes = require("./routes/settings");
 const creditsRoutes = require("./routes/credits");
 const { requestLogger, errorLogger } = require("./middleware/logger");
-const { globalLimiter, loginLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
+const { globalLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
 const User = require("./models/User");
 const { seedDemoNotes } = require("./seeds/demoNotes");
 
@@ -86,9 +86,8 @@ app.use(cookieParser());
 app.use(requestLogger);
 
 // API Routes
-// Auth limiter only on login/register, not on /me or /logout
-app.use('/api/auth/login', loginLimiter);
-app.use('/api/auth/register', loginLimiter);
+// Login/register limiting lives on those routes in the auth router;
+// mounting it here too would count each failed attempt twice.
 app.use('/api/auth', authRoutes);
 app.use("/api/tutor", tutorRoutes);
 app.use("/api/flashcards", flashcardRoutes);
