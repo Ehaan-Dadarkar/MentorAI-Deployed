@@ -128,6 +128,38 @@ export default function Workspace() {
   const dirtyDebounceTimerRef = useRef<number | null>(null);
   const isDemoUser = Boolean(user?.isDemo);
   const isDemoNote = Boolean(activeNote?.isDemoNote);
+  const isDirtyRef = useRef(false);
+  const titleDraftRef = useRef("");
+
+  // Mirrors for the mount-once guards below: they must read the latest
+  // dirty state, not a stale render-scope closure.
+  useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
+  useEffect(() => { titleDraftRef.current = titleDraft; }, [titleDraft]);
+
+  // M11: save any unsaved edits of the current note. This also flushes
+  // the 600 ms dirty debounce, so edits typed just before a note switch
+  // are saved too (the store already holds the latest content: onUpdate
+  // writes it synchronously). Used before every action that replaces the
+  // active note, and on editor blur. A failed save keeps the dirty flag,
+  // so the autosave interval retries it; callers still proceed, so a
+  // failed save never traps the user on the current note.
+  const saveDirtyEdits = async () => {
+    const hadPendingEdit = dirtyDebounceTimerRef.current !== null;
+    if (dirtyDebounceTimerRef.current !== null) {
+      window.clearTimeout(dirtyDebounceTimerRef.current);
+      dirtyDebounceTimerRef.current = null;
+    }
+    if (!hadPendingEdit && !isDirtyRef.current) return;
+    const state = useWorkspaceStore.getState();
+    if (!state.activeNote || state.isSaving) return;
+    try {
+      await saveActiveNote({
+        title: titleDraftRef.current.trim() || state.activeNote.title,
+        content: state.editorContent,
+      });
+      setIsDirty(false);
+    } catch (e) { console.error(e); }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -141,6 +173,7 @@ export default function Workspace() {
           "prose prose-invert max-w-none focus:outline-none min-h-[50vh] sm:min-h-[60vh] text-base leading-relaxed tracking-normal font-['Inter_Tight','Inter',sans-serif]",
       },
     },
+    onBlur: () => { void saveDirtyEdits(); },
     onUpdate: ({ editor: currentEditor }) => {
       if (isApplyingEditorContentRef.current) return;
       updateEditorContent(currentEditor.getHTML());
@@ -173,11 +206,33 @@ export default function Workspace() {
     isApplyingEditorContentRef.current = false;
   }, [activeNote, editor, updateEditorContent]);
 
+  // M11: never lose edits on tab close or in-app navigation. The
+  // beforeunload guard covers tab/window close; the unmount save
+  // covers SPA route changes (no beforeunload fires, but an in-flight
+  // request is not cancelled by them). Both read refs plus the store,
+  // never stale render-scope state.
   useEffect(() => {
+    const hasUnsavedEdits = () =>
+      isDirtyRef.current || dirtyDebounceTimerRef.current !== null;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedEdits()) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      if (!hasUnsavedEdits()) return;
       if (dirtyDebounceTimerRef.current !== null) {
         window.clearTimeout(dirtyDebounceTimerRef.current);
+        dirtyDebounceTimerRef.current = null;
       }
+      const state = useWorkspaceStore.getState();
+      if (!state.activeNote || state.isSaving) return;
+      void state.saveActiveNote({
+        title: titleDraftRef.current.trim() || state.activeNote.title,
+        content: state.editorContent,
+      }).catch((e) => console.error(e));
     };
   }, []);
 
@@ -190,12 +245,13 @@ export default function Workspace() {
           setIsDirty(false);
         } catch (e) { console.error(e); }
       })();
-    }, 30_000);
+    }, 10_000);
     return () => window.clearInterval(interval);
   }, [activeNote, editorContent, isDirty, isSaving, saveActiveNote, titleDraft]);
 
   const handleCreateNote = async () => {
     if (isDemoUser) return;
+    await saveDirtyEdits();
     try {
       await createNote({ title: "UNTITLED NOTE", content: "", subject: "General" });
       setIsDirty(false);
@@ -213,6 +269,7 @@ export default function Workspace() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
+    await saveDirtyEdits();
     try {
       await importPdf(file);
       setIsDirty(false);
@@ -221,6 +278,7 @@ export default function Workspace() {
   };
 
   const handleSelectNote = async (noteId: string) => {
+    await saveDirtyEdits();
     try { await loadNote(noteId); } catch (e) { console.error(e); }
   };
 
