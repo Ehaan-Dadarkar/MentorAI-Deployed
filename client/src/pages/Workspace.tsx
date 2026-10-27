@@ -6,7 +6,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Plus, Upload, Trash2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Plus, Upload, Trash2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 
@@ -115,9 +115,10 @@ const SecondaryButton = ({
 
 export default function Workspace() {
   const {
-    notes, activeNote, editorContent, isLoading, isSaving, isImportingPdf,
+    notes, trashNotes, filters, activeNote, editorContent, isLoading, isSaving, isImportingPdf,
     fetchWorkspaceData, loadNote, createNote, saveActiveNote,
     importPdf, deleteNote, updateEditorContent,
+    setSearch, setSubjectFilter, restoreNote, deletePermanently,
   } = useWorkspaceStore();
   const { user } = useAuthStore();
 
@@ -135,6 +136,20 @@ export default function Workspace() {
   // dirty state, not a stale render-scope closure.
   useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
   useEffect(() => { titleDraftRef.current = titleDraft; }, [titleDraft]);
+
+  // M10: search is debounced — the store filter is server-side, so
+  // every keystroke must not fire two API calls. setSearch is
+  // synchronous in zustand, so fetchWorkspaceData below reads the
+  // new filter.
+  const [searchDraft, setSearchDraft] = useState("");
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (searchDraft === filters.search) return;
+      setSearch(searchDraft);
+      void fetchWorkspaceData();
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchDraft, filters.search, setSearch, fetchWorkspaceData]);
 
   // M11: save any unsaved edits of the current note. This also flushes
   // the 600 ms dirty debounce, so edits typed just before a note switch
@@ -248,6 +263,41 @@ export default function Workspace() {
     }, 10_000);
     return () => window.clearInterval(interval);
   }, [activeNote, editorContent, isDirty, isSaving, saveActiveNote, titleDraft]);
+
+  // M10: subjects come from the notes on screen, plus the active
+  // filter (a filtered list would otherwise drop its own chip).
+  const subjects = Array.from(
+    new Set([
+      ...notes.map((note) => note.subject || "General"),
+      ...(filters.subject ? [filters.subject] : []),
+    ]),
+  );
+
+  const handleSelectSubject = (subject: string | null) => {
+    setSubjectFilter(subject);
+    void fetchWorkspaceData();
+  };
+
+  const handleClearFilters = () => {
+    setSearchDraft("");
+    setSearch("");
+    setSubjectFilter(null);
+    void fetchWorkspaceData();
+  };
+
+  const handleRestoreNote = async (noteId: string) => {
+    try {
+      await restoreNote(noteId);
+      await fetchWorkspaceData();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleDeletePermanently = async (noteId: string) => {
+    try {
+      await deletePermanently(noteId);
+      await fetchWorkspaceData();
+    } catch (e) { console.error(e); }
+  };
 
   const handleCreateNote = async () => {
     if (isDemoUser) return;
@@ -423,6 +473,49 @@ export default function Workspace() {
                   </span>
                 </div>
 
+                {/* SEARCH + SUBJECT FILTERS — M10: the store already
+                    filtered server-side; this wires it to the UI. */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      value={searchDraft}
+                      onChange={(e) => setSearchDraft(e.target.value)}
+                      placeholder="SEARCH NOTES..."
+                      className="w-full h-10 bg-transparent border border-[#262626] pl-10 pr-4 text-xs font-bold tracking-widest text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-8 sm:mb-12">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSubject(null)}
+                    className={cn(
+                      "text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
+                      !filters.subject
+                        ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
+                        : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                    )}
+                  >
+                    All
+                  </button>
+                  {subjects.map((subject) => (
+                    <button
+                      key={subject}
+                      type="button"
+                      onClick={() => handleSelectSubject(subject)}
+                      className={cn(
+                        "text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
+                        filters.subject === subject
+                          ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
+                          : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                      )}
+                    >
+                      {subject}
+                    </button>
+                  ))}
+                </div>
+
                 {isLoading && notes.length === 0 ? (
                   <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
                     <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
@@ -432,14 +525,22 @@ export default function Workspace() {
                 ) : notes.length === 0 ? (
                   <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
                     <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
-                      VOID.
+                      {filters.search || filters.subject ? "NO MATCHES." : "VOID."}
                     </h3>
                     <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8 max-w-sm">
-                      YOUR WORKSPACE IS EMPTY. CREATE A NOTE OR IMPORT A PDF TO BEGIN.
+                      {filters.search || filters.subject
+                        ? "NO NOTES MATCH YOUR SEARCH OR FILTER. CLEAR THEM TO SEE EVERYTHING."
+                        : "YOUR WORKSPACE IS EMPTY. CREATE A NOTE OR IMPORT A PDF TO BEGIN."}
                     </p>
-                    <PrimaryButton onClick={handleCreateNote}>
-                      NEW NOTE <ArrowRight className="w-4 h-4 ml-1" />
-                    </PrimaryButton>
+                    {filters.search || filters.subject ? (
+                      <PrimaryButton onClick={handleClearFilters}>
+                        CLEAR FILTERS <ArrowRight className="w-4 h-4 ml-1" />
+                      </PrimaryButton>
+                    ) : (
+                      <PrimaryButton onClick={handleCreateNote}>
+                        NEW NOTE <ArrowRight className="w-4 h-4 ml-1" />
+                      </PrimaryButton>
+                    )}
                   </div>
                 ) : (
                   <motion.div
@@ -479,6 +580,62 @@ export default function Workspace() {
                       </motion.div>
                     ))}
                   </motion.div>
+                )}
+              </div>
+
+              {/* TRASH SECTION — M10: a trashed note is restorable again,
+                  and permanently deletable, from the UI that trashed it. */}
+              <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16 border-t border-[#262626]">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
+                  <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
+                    TRASH
+                  </h2>
+                  <div className="h-px flex-1 bg-[#262626]" />
+                  <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    {trashNotes.length.toString().padStart(2, "0")}
+                    <span className="hidden sm:inline"> ITEMS</span>
+                  </span>
+                </div>
+
+                {trashNotes.length === 0 ? (
+                  <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
+                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                      TRASH IS EMPTY.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-t border-l border-[#262626] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {trashNotes.map((note) => (
+                      <div
+                        key={note._id}
+                        className="border-b border-r border-[#262626] p-5 sm:p-8 flex flex-col"
+                      >
+                        <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3 sm:mb-4 opacity-50">
+                          {formatDate(note.createdAt)}
+                        </p>
+                        <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 line-clamp-3">
+                          {note.title || "UNTITLED NOTE"}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-6 sm:mt-8">
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreNote(note._id)}
+                            className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase hover:text-[#FF3D00] transition-colors"
+                          >
+                            RESTORE
+                          </button>
+                          <span className="text-[10px] text-[#262626]">|</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePermanently(note._id)}
+                            className="text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FF3D00] transition-colors"
+                          >
+                            DELETE PERMANENTLY
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </motion.div>
