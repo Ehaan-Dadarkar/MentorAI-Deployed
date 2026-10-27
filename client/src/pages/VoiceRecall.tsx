@@ -412,6 +412,7 @@ function SessionScreen() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -424,9 +425,34 @@ function SessionScreen() {
 
   useEffect(() => { setEditedTranscript(transcript); setIsEditing(false); }, [transcript]);
 
+  // Unmount cleanup (Frontend M9): stop the recorder and its tracks so
+  // leaving the page mid-recording does not leave the mic stream live.
   useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try { recorder.stop(); } catch { /* already stopped */ }
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current = null;
+      streamRef.current = null;
+      audioChunksRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    // A recording left running across a question change (e.g. the timer
+    // auto-submitting) must not stay live while the UI claims it stopped.
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      try { recorder.stop(); } catch { /* already stopped */ }
+    }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaRecorderRef.current = null;
+    streamRef.current = null;
+    audioChunksRef.current = [];
     setTranscript(""); setEditedTranscript(""); setIsEditing(false);
-    setIsRecording(false); setIsTranscribing(false);
+    setIsRecording(false); setIsTranscribing(false); setMicError(null);
   }, [currentQuestionIndex]);
 
   useEffect(() => {
@@ -457,6 +483,7 @@ function SessionScreen() {
 
   const startRecording = async () => {
     try {
+      setMicError(null);
       audioChunksRef.current = [];
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -469,7 +496,26 @@ function SessionScreen() {
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.start(100);
       setIsRecording(true); setTranscript(""); setEditedTranscript(""); setTranscriptionError(null);
-    } catch (err) { console.error("Mic error:", err); }
+    } catch (err) {
+      console.error("Mic error:", err);
+      // A stream opened before the failure (e.g. MediaRecorder
+      // construction) must not stay live after a failed start.
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current = null;
+      streamRef.current = null;
+      audioChunksRef.current = [];
+      setIsRecording(false);
+      const name = (err as { name?: string }).name;
+      setMicError(
+        name === "NotAllowedError"
+          ? "MICROPHONE ACCESS DENIED — ALLOW MIC ACCESS AND TRY AGAIN"
+          : name === "NotFoundError"
+          ? "NO MICROPHONE FOUND — CONNECT A MIC AND TRY AGAIN"
+          : name === "NotReadableError"
+          ? "MICROPHONE IN USE BY ANOTHER APP — CLOSE IT AND TRY AGAIN"
+          : "MICROPHONE FAILED TO START — TRY AGAIN",
+      );
+    }
   };
 
   const stopRecording = async () => {
@@ -480,7 +526,7 @@ function SessionScreen() {
     await new Promise<void>((resolve) => { mediaRecorderRef.current!.onstop = () => resolve(); });
     try {
       const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      if (blob.size < 1000) { setIsTranscribing(false); return; }
+      if (blob.size < 1000) { setTranscriptionError("RECORDING TOO SHORT — TRY RECORDING AGAIN"); setIsTranscribing(false); return; }
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       const store = useVoiceRecallStore.getState();
@@ -511,7 +557,16 @@ function SessionScreen() {
 
   const stopRecordingIfActive = () => {
     if (isRecording) {
+      // Stop the recorder first: stopping only the tracks leaves the
+      // recorder running (the audit's leak) and drops the recording.
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try { recorder.stop(); } catch { /* already stopped */ }
+      }
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current = null;
+      streamRef.current = null;
+      audioChunksRef.current = [];
       setIsRecording(false); setIsTranscribing(false);
     }
   };
@@ -596,6 +651,12 @@ function SessionScreen() {
         {transcriptionError && (
           <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-[10px] font-bold tracking-[0.2em] uppercase">
             {transcriptionError}
+          </div>
+        )}
+
+        {micError && (
+          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-[10px] font-bold tracking-[0.2em] uppercase">
+            {micError}
           </div>
         )}
 
