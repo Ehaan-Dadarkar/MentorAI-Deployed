@@ -2,8 +2,20 @@ import axios from "axios";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const normalizedApiBaseUrl = API_BASE_URL.replace(/\/$/, "");
+// Single API base for the whole client (Frontend M3): the tutor SSE
+// stream used to duplicate this fallback independently, so the two
+// could drift apart. A production build without VITE_API_URL fails
+// loudly here, at startup, instead of silently calling localhost
+// and failing every API call with no useful message. Dev builds
+// (PROD false) keep the localhost default.
+const configuredApiBaseUrl = import.meta.env.VITE_API_URL as string | undefined;
+if (import.meta.env.PROD && !configuredApiBaseUrl) {
+  throw new Error(
+    "VITE_API_URL is not set: this production build has no API base URL. " +
+      "Set VITE_API_URL at build time; refusing to fall back to localhost.",
+  );
+}
+export const API_BASE_URL = (configuredApiBaseUrl || "http://localhost:5000").replace(/\/$/, "");
 
 // Cold-start-safe timeouts (Frontend M6): the global 30 s timeout is
 // too short for a first AI call after Render idles (cold start plus
@@ -57,7 +69,7 @@ export function shouldRetryColdStart(error: ColdStartRetryCandidate): boolean {
 }
 
 const api = axios.create({
-  baseURL: `${normalizedApiBaseUrl}/api`,
+  baseURL: `${API_BASE_URL}/api`,
   withCredentials: true,
   timeout: 30000,
   headers: {

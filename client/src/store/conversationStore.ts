@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "@/lib/axios";
+import api, { API_BASE_URL } from "@/lib/axios";
 import { openApiKeyGate } from "@/lib/apiKeyGate";
 
 export type TutorRole = "user" | "assistant";
@@ -420,7 +420,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       .join("\n\n")
       .trim();
     const requestSessionId = state.activeSessionId || undefined;
-    const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
+    const apiUrl = API_BASE_URL;
 
     const streamGen = ++streamGeneration;
     streamController = new AbortController();
