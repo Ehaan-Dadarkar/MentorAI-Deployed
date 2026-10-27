@@ -99,7 +99,7 @@ test("demo user gets the shared key and is never charged", async (t) => {
   assert.equal(calls.spend.length, 0);
 });
 
-test("keyless user with balance spends the placeholder cost and gets the shared key", async (t) => {
+test("keyless user with balance spends 1 credit and gets the shared key", async (t) => {
   withEnv(t, "OPENROUTER_API_KEY", "shared-key");
   withEnv(t, "CREDITS_PER_AI_CALL", undefined);
   stubUser(t, { "user-keyless": keylessUser });

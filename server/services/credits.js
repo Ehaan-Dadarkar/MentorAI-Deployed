@@ -15,17 +15,16 @@ async function getBalance(userId) {
   return user.creditBalance || 0;
 }
 
-// PLACEHOLDER PRICE — PRODUCT DECISION STILL OWED TO EHAAN.
+// CONFIRMED PRICE — option A, decided by Ehaan 27 Oct 2026.
 // Credits charged per AI request for a keyless, non-demo user who
 // pays with credits instead of their own OpenRouter key (see
-// openrouterAccess.js). This is a flat per-request default, NOT
-// derived from the metered USD cost in the UsageRecord ledger, and
-// it is NOT a final price: 1 credit per request means a $5 starter
-// pack (50 credits) buys 50 requests. Do not treat this default as
-// an approved price; change it (or replace it with a cost-based
-// conversion) once Ehaan decides. The env override exists so an
-// operator can tune it without a code change, but it does not make
-// the value any less of a placeholder.
+// openrouterAccess.js). This is a flat per-request price, NOT
+// derived from the metered USD cost in the UsageRecord ledger:
+// 1 credit per request means a $5 starter pack (50 credits) buys
+// 50 requests. The cost-based alternative (option B) is deferred
+// until after launch, once the UsageRecord ledger holds real cost
+// data. The env override exists so an operator can tune it without
+// a code change; its default is the confirmed 1.
 function creditCostPerAiCall() {
   const parsed = parseInt(process.env.CREDITS_PER_AI_CALL, 10);
   return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;

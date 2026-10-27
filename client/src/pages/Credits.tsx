@@ -81,8 +81,8 @@ export default function Credits() {
           How credits work: if you have your own OpenRouter key, AI
           calls use it and never touch your balance. If you do not,
           each AI request spends 1 credit and runs on the shared key
-          instead — that 1-credit price is a placeholder while the
-          final price is decided, not a final rate. A request that
+          instead — that flat 1-credit-per-request price is the
+          confirmed rate. A request that
           fails before delivering an AI result gives its credit
           back; the live tutor stream is the exception, since a
           stream that dies mid-answer already delivered part of an
