@@ -1,9 +1,9 @@
 # Minimal CI: server unit tests (node:test, no extra dependencies)
-# plus the client production build. Deliberately no `tsc -b` gate
-# yet: VoiceRecall.tsx carries two pre-existing type errors on
-# untouched lines (see FIXES-STATE slice 7), so a tsc gate would
-# fail on code this programme did not touch. No secrets, no deploy,
-# no spend in this workflow.
+# plus the client type-check and production build. The `tsc -b`
+# gate landed with slice 27, once the last two pre-existing
+# VoiceRecall.tsx type errors were fixed there; `vite build`
+# alone does not type-check. No secrets, no deploy, no spend
+# in this workflow.
 name: CI
 
 on:
@@ -36,6 +36,8 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
       - run: npm ci
+        working-directory: client
+      - run: npx tsc -b
         working-directory: client
       - run: npm run build
         working-directory: client

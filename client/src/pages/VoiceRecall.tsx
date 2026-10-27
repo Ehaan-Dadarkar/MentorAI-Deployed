@@ -787,7 +787,7 @@ function FeedbackScreen() {
 
   if (!lastResponse) return null;
 
-  const { score, whatWasCorrect, whatWasMissed, improvement } = lastResponse.evaluation;
+  const { score, whatWasCorrect, whatWasMissed, improvement, speechCorrections = [] } = lastResponse.evaluation;
   const displayVerdict = lastResponse.verdict || "UNKNOWN";
 
   return (
@@ -839,7 +839,7 @@ function FeedbackScreen() {
           </motion.div>
         )}
 
-        {lastResponse.evaluation.speechCorrections?.length > 0 && (
+        {speechCorrections.length > 0 && (
           <motion.div
             variants={fadeUp}
             className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 col-span-1 sm:col-span-2 bg-[#0A0A0A]"
@@ -848,7 +848,7 @@ function FeedbackScreen() {
               SPEECH MISMATCHES
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {lastResponse.evaluation.speechCorrections.map((correction, idx) => (
+              {speechCorrections.map((correction, idx) => (
                 <div
                   key={idx}
                   className="border border-[#262626] p-3 sm:p-4 text-xs font-mono uppercase tracking-widest flex items-center justify-between gap-2"
