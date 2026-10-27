@@ -576,16 +576,6 @@ function SessionScreen() {
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#737373]">
               DIFFICULTY: <span className="text-[#FAFAFA] ml-1">{currentQuestion.difficulty}</span>
             </span>
-            <div className="flex flex-wrap gap-2">
-              {currentQuestion.keyPoints.map((point, idx) => (
-                <span
-                  key={idx}
-                  className="text-[#737373] text-[10px] uppercase font-bold tracking-widest px-2 py-1 border border-[#262626]"
-                >
-                  {point}
-                </span>
-              ))}
-            </div>
           </div>
         </motion.div>
 
