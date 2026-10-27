@@ -428,6 +428,35 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     streamGotFirstChunk = false;
     armStreamWatchdog(streamGen);
 
+    // Batched token flush (M5 remainder): every SSE token used to call
+    // set() directly, so every token re-rendered the whole thread and
+    // re-parsed every message's markdown. Tokens now accumulate in a
+    // local buffer and flush at most every 100 ms; the flush is forced
+    // on completion, on error/stop, and when the stream ends, so no
+    // token is ever lost or delayed past the end of the stream.
+    // Declared OUTSIDE the try on purpose: const/let inside a try block
+    // are invisible to its catch, and the catch flush (which saves a
+    // stopped stream's partial answer) is the whole point of this change.
+    let pendingText = "";
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushAssistantText = () => {
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      if (!pendingText) return;
+      const text = pendingText;
+      pendingText = "";
+      set((prev) => ({
+        messages: prev.messages.map((msg) =>
+          msg.id === assistantId
+            ? { ...msg, content: `${msg.content}${text}` }
+            : msg,
+        ),
+      }));
+    };
+
     try {
       const response = await fetch(`${apiUrl}/api/tutor/chat`, {
         method: "POST",
@@ -458,20 +487,26 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       const decoder = new TextDecoder();
       let buffer = "";
 
+      // Tokens accumulate in the buffer declared above the try and
+      // flush at most every 100 ms (see flushAssistantText).
       const appendAssistantText = (token: string) => {
-        set((prev) => ({
-          messages: prev.messages.map((msg) =>
-            msg.id === assistantId
-              ? { ...msg, content: `${msg.content}${token}` }
-              : msg,
-          ),
-        }));
+        pendingText += token;
+        if (!flushTimer) {
+          flushTimer = setTimeout(flushAssistantText, 100);
+        }
       };
 
       const completeAssistantMessage = (
         finalContent: string,
         followUps: string[],
       ) => {
+        // The server's final content supersedes any unflushed tokens:
+        // discard the buffer instead of appending it after the final text.
+        if (flushTimer) {
+          clearTimeout(flushTimer);
+          flushTimer = null;
+        }
+        pendingText = "";
         set((prev) => ({
           messages: prev.messages.map((msg) =>
             msg.id === assistantId
@@ -581,8 +616,17 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         await processEventBlock(buffer);
       }
 
+      // A stream that ends without a complete event still owes its
+      // buffered tokens to the thread.
+      flushAssistantText();
+
       await get().loadSessions();
     } catch (error: any) {
+      // Flush first: the stop/error branches below read msg.content,
+      // and a stopped stream's partial answer lives in the buffer
+      // until this flush. Without it, a stop could drop the partial
+      // answer as an "empty placeholder".
+      flushAssistantText();
       const aborted =
         error?.name === "AbortError" || streamController?.signal.aborted === true;
       if (aborted) {

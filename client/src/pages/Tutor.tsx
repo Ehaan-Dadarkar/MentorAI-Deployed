@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -335,6 +335,38 @@ const SecondaryButton = ({
 );
 
 // ── Main ──────────────────────────────────────────────────────
+// Memoised markdown renderer (M5 remainder): the thread re-renders
+// on every store update, and this block used to re-parse the full
+// markdown of every message on every token. With memo, a message
+// whose content string is unchanged skips the re-parse entirely;
+// only the streaming message re-parses, and only at flush cadence.
+// The renderer itself is byte-identical to the previous inline block.
+const TutorMessageMarkdown = memo(({ content }: { content: string }) => (
+  <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                                        strong: ({ children }) => <strong className="font-bold text-[#FF3D00]">{children}</strong>,
+                                        code: ({ children, className, ...props }: any) =>
+                                          !className ? (
+                                            <code className="bg-[#1A1A1A] px-1.5 py-0.5 text-[#FF3D00] font-mono text-xs">{children}</code>
+                                          ) : (
+                                            <code className="block bg-[#1A1A1A] p-4 my-3 font-mono text-xs overflow-x-auto">{children}</code>
+                                          ),
+                                        pre: ({ children }) => <pre className="bg-[#1A1A1A] p-3 sm:p-4 my-3 overflow-x-auto border border-[#262626] text-xs">{children}</pre>,
+                                        ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                                        ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                                        li: ({ children }) => <li className="text-[#FAFAFA]">{children}</li>,
+                                        h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold tracking-tight mb-3 text-[#FAFAFA]">{children}</h1>,
+                                        h2: ({ children }) => <h2 className="text-base sm:text-lg font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h2>,
+                                        h3: ({ children }) => <h3 className="text-sm sm:text-base font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h3>,
+                                        blockquote: ({ children }) => <blockquote className="border-l-2 border-[#FF3D00] pl-4 my-3 text-[#737373] italic">{children}</blockquote>,
+                                      }}
+                                    >
+                                      {content}
+                                    </ReactMarkdown>
+));
+
 export default function Tutor() {
   const {
     mode,
@@ -786,29 +818,7 @@ export default function Tutor() {
                             >
                               <div className="text-xs sm:text-sm font-medium text-[#FAFAFA] leading-relaxed prose prose-invert prose-sm max-w-none">
                                 {message.content ? (
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                                      strong: ({ children }) => <strong className="font-bold text-[#FF3D00]">{children}</strong>,
-                                      code: ({ children, className, ...props }: any) =>
-                                        !className ? (
-                                          <code className="bg-[#1A1A1A] px-1.5 py-0.5 text-[#FF3D00] font-mono text-xs">{children}</code>
-                                        ) : (
-                                          <code className="block bg-[#1A1A1A] p-4 my-3 font-mono text-xs overflow-x-auto">{children}</code>
-                                        ),
-                                      pre: ({ children }) => <pre className="bg-[#1A1A1A] p-3 sm:p-4 my-3 overflow-x-auto border border-[#262626] text-xs">{children}</pre>,
-                                      ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                                      ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                                      li: ({ children }) => <li className="text-[#FAFAFA]">{children}</li>,
-                                      h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold tracking-tight mb-3 text-[#FAFAFA]">{children}</h1>,
-                                      h2: ({ children }) => <h2 className="text-base sm:text-lg font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h2>,
-                                      h3: ({ children }) => <h3 className="text-sm sm:text-base font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h3>,
-                                      blockquote: ({ children }) => <blockquote className="border-l-2 border-[#FF3D00] pl-4 my-3 text-[#737373] italic">{children}</blockquote>,
-                                    }}
-                                  >
-                                    {message.content}
-                                  </ReactMarkdown>
+                                  <TutorMessageMarkdown content={message.content} />
                                 ) : isStreaming ? "..." : ""}
                               </div>
                             </div>
