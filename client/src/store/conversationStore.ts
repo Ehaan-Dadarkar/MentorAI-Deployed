@@ -53,6 +53,7 @@ interface ConversationState {
   availableNotes: TutorNote[];
   isSavingNotes: boolean;
   isStreaming: boolean;
+  sessionSaveFailed: boolean;
   flashcardsSaved: number;
   setContext: (context: string) => void;
   setMode: (mode: TutorMode) => void;
@@ -109,6 +110,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   availableNotes: [],
   isSavingNotes: false,
   isStreaming: false,
+  sessionSaveFailed: false,
   flashcardsSaved: 0,
 
   setContext: (context) => set({ context }),
@@ -124,6 +126,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       activeSessionId: null,
       activeSessionName: null,
       isStreaming: false,
+      sessionSaveFailed: false,
     }),
 
   loadSessions: async () => {
@@ -184,6 +187,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           ? messagesFromSnapshot
           : fallbackMessages,
       isStreaming: false,
+      sessionSaveFailed: false,
     });
   },
 
@@ -351,6 +355,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set({
       messages: nextMessages,
       isStreaming: true,
+      sessionSaveFailed: false,
     });
 
     const payloadMessages = [...state.messages, userMessage]
@@ -468,6 +473,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             : [];
 
           completeAssistantMessage(completeContent, completeFollowUps);
+
+          if (parsed.sessionSaveFailed === true) {
+            set({ sessionSaveFailed: true });
+          }
 
           set((prev) => ({
             activeSessionId:

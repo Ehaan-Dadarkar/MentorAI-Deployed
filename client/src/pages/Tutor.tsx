@@ -345,6 +345,7 @@ export default function Tutor() {
     availableNotes,
     isSavingNotes,
     isStreaming,
+    sessionSaveFailed,
     setMode,
     newConversation,
     loadSessions,
@@ -854,6 +855,16 @@ export default function Tutor() {
                     {isStreaming && (
                       <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                         <Loader2 className="w-3 h-3 animate-spin" /> STREAMING...
+                      </div>
+                    )}
+                    {sessionSaveFailed && (
+                      <div className="border border-[#FF3D00] p-4">
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                          NOT SAVED — THIS REPLY WAS NOT SAVED TO YOUR HISTORY
+                        </span>
+                        <p className="mt-2 text-xs text-[#737373] leading-relaxed">
+                          The reply above is shown in full, but this turn was not saved to your session history. Copy anything you want to keep before leaving this conversation.
+                        </p>
                       </div>
                     )}
                     <div ref={messagesEndRef} />
