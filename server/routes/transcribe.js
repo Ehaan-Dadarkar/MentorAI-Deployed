@@ -3,6 +3,7 @@ const multer = require("multer");
 const FormData = require("form-data");
 const axios = require("axios");
 const auth = require("../middleware/auth");
+const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const upload = multer({
 
 const WHISPER_URL = process.env.WHISPER_SERVER_URL || "http://127.0.0.1:5001";
 
-router.post("/", auth, upload.single("audio"), async (req, res) => {
+router.post("/", auth, dynamicAiLimiter, upload.single("audio"), async (req, res) => {
   try {
     if (process.env.NODE_ENV !== "production") {
       console.log("Transcribe: received audio");
@@ -55,6 +56,18 @@ router.post("/", auth, upload.single("audio"), async (req, res) => {
       maxBodyLength: Infinity,
     });
 
+    // Whisper returns HTTP 200 with success:false on failure, so the
+    // flag — not the status — is the failure signal. Never report a
+    // failed transcription as success with an empty transcript.
+    if (response.data?.success === false) {
+      console.error("Whisper reported failure:", response.data?.error);
+      return res.status(502).json({
+        success: false,
+        transcript: "",
+        error: "Transcription failed",
+      });
+    }
+
     const transcript = response.data?.transcript || "";
     if (process.env.NODE_ENV !== "production") {
       console.log("Whisper transcript:", transcript);
@@ -75,17 +88,17 @@ router.post("/", auth, upload.single("audio"), async (req, res) => {
 
     if (error.code === "ECONNREFUSED") {
       console.error("Whisper server is not running!");
-      return res.json({
+      return res.status(502).json({
         success: false,
         transcript: "",
-        error: "Whisper server not running on port 5001",
+        error: "Transcription service unavailable",
       });
     }
 
-    return res.json({
+    return res.status(502).json({
       success: false,
       transcript: "",
-      error: error.message,
+      error: "Transcription failed",
     });
   }
 });

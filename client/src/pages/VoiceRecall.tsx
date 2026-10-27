@@ -411,6 +411,7 @@ function SessionScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -467,7 +468,7 @@ function SessionScreen() {
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.start(100);
-      setIsRecording(true); setTranscript(""); setEditedTranscript("");
+      setIsRecording(true); setTranscript(""); setEditedTranscript(""); setTranscriptionError(null);
     } catch (err) { console.error("Mic error:", err); }
   };
 
@@ -488,8 +489,21 @@ function SessionScreen() {
       const response = await axios.post("/voice/transcribe", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      if (response.data.transcript) setTranscript(response.data.transcript);
-    } catch (err) { console.error("Transcription error:", err); }
+      if (response.data.success === false) {
+        setTranscriptionError("TRANSCRIPTION FAILED — TRY RECORDING AGAIN");
+      } else if (response.data.transcript) {
+        setTranscriptionError(null);
+        setTranscript(response.data.transcript);
+      }
+    } catch (err) {
+      console.error("Transcription error:", err);
+      const status = (err as { response?: { status?: number } }).response?.status;
+      setTranscriptionError(
+        status === 429
+          ? "TOO MANY TRANSCRIPTION REQUESTS — TRY AGAIN LATER"
+          : "TRANSCRIPTION FAILED — TRY RECORDING AGAIN",
+      );
+    }
     finally { setIsTranscribing(false); }
   };
 
@@ -578,6 +592,12 @@ function SessionScreen() {
             </span>
           </div>
         </motion.div>
+
+        {transcriptionError && (
+          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-[10px] font-bold tracking-[0.2em] uppercase">
+            {transcriptionError}
+          </div>
+        )}
 
         {/* TRANSCRIPT PANEL */}
         <AnimatePresence>
