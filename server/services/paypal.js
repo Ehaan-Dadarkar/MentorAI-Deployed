@@ -67,6 +67,12 @@ async function createOrder(packId) {
     throw err;
   }
   const token = await getAccessToken();
+  // Where PayPal sends the buyer after approval (with ?token=<order id>
+  // appended) or cancellation, so the client can capture or abandon the
+  // order. Without return_url PayPal never comes back to MentorAI and
+  // no capture could ever be triggered. Same env override the CORS
+  // allowlist uses, falling back to the production frontend origin.
+  const appOrigin = (process.env.CLIENT_URL || "https://mentorai-prod.vercel.app").replace(/\/$/, "");
   const res = await axios.post(
     `${paypalBase()}/v2/checkout/orders`,
     {
@@ -80,6 +86,10 @@ async function createOrder(packId) {
           description: `MentorAI ${pack.label} credit pack (${pack.credits} credits)`,
         },
       ],
+      application_context: {
+        return_url: `${appOrigin}/credits?paypal=approved`,
+        cancel_url: `${appOrigin}/credits?paypal=cancelled`,
+      },
     },
     {
       headers: {

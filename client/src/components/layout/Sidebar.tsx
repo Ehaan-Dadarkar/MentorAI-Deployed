@@ -9,6 +9,7 @@ import {
   FileQuestion,
   Network,
   FolderOpen,
+  Coins,
   Settings,
   Command,
   ChevronLeft,
@@ -39,6 +40,7 @@ const navItems: SidebarNavItem[] = [
   { icon: Mic,             label: "Voice Recall",    path: "/voice-recall" },
   { icon: Network,         label: "Knowledge Graph", path: "/knowledge-graph" },
   { icon: FolderOpen,      label: "Workspace",       path: "/workspace" },
+  { icon: Coins,         label: "Credits",         path: "/credits" },
 ];
 
 const bottomItems = [

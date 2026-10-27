@@ -23,6 +23,7 @@ const VoiceRecall = lazy(() => import("@/pages/VoiceRecall"));
 const Workspace = lazy(() => import("@/pages/Workspace"));
 const KnowledgeGraph = lazy(() => import("@/pages/KnowledgeGraph"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const Credits = lazy(() => import("@/pages/Credits"));
 const Login = lazy(() => import("@/pages/Login"));
 const Signup = lazy(() => import("@/pages/Signup"));
 
@@ -134,6 +135,7 @@ function AppLayout() {
               <Route path="/workspace" element={<Workspace />} />
               <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/credits" element={<Credits />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>

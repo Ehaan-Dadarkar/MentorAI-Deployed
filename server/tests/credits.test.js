@@ -97,6 +97,33 @@ test("createOrder uses the sandbox host, intent CAPTURE, and the server pack pri
   assert.ok(stub.calls.every((u) => u.includes("sandbox")));
 });
 
+test("createOrder sends PayPal return/cancel URLs so approval comes back to /credits", async (t) => {
+  const stub = tokenAndOrderCalls();
+  let orderBody = null;
+  stubPost(t, async (url, data) => {
+    if (url.endsWith("/v2/checkout/orders")) orderBody = data;
+    return stub.impl(url, data);
+  });
+  delete process.env.CLIENT_URL;
+  await paypal.createOrder("starter");
+  assert.equal(
+    orderBody.application_context.return_url,
+    "https://mentorai-prod.vercel.app/credits?paypal=approved",
+  );
+  assert.equal(
+    orderBody.application_context.cancel_url,
+    "https://mentorai-prod.vercel.app/credits?paypal=cancelled",
+  );
+
+  process.env.CLIENT_URL = "https://example.example";
+  await paypal.createOrder("starter");
+  assert.equal(
+    orderBody.application_context.return_url,
+    "https://example.example/credits?paypal=approved",
+  );
+  delete process.env.CLIENT_URL;
+});
+
 test("createOrder rejects an unknown pack without any HTTP call", async (t) => {
   let calls = 0;
   stubPost(t, async () => {
