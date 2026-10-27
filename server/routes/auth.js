@@ -6,6 +6,7 @@ const User = require("../models/User");
 const validate = require("../middleware/validate");
 const auth = require("../middleware/auth");
 const { loginLimiter } = require("../middleware/rateLimiter");
+const { encryptKey } = require("../services/keyCrypto");
 
 const router = express.Router();
 
@@ -243,7 +244,10 @@ router.patch("/profile", auth, async (req, res, next) => {
     if (subjects) updates.subjects = subjects;
     if (studyGoalMinutes) updates.studyGoalMinutes = studyGoalMinutes;
     if (openrouterApiKey !== undefined) {
-      updates.openrouterApiKey = String(openrouterApiKey).trim();
+      // Encrypted at rest when KEY_ENCRYPTION_KEY is set; the
+      // hasOpenrouterApiKey boolean below still works either way,
+      // because an encrypted value is a non-empty string.
+      updates.openrouterApiKey = encryptKey(String(openrouterApiKey).trim());
     }
 
     const user = await User.findByIdAndUpdate(req.userId, updates, {

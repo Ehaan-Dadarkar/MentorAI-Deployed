@@ -1,6 +1,11 @@
 const User = require("../models/User");
 const credits = require("./credits");
+const { decryptKey } = require("./keyCrypto");
 
+// The single place a stored user key becomes a usable provider key:
+// decrypt here, at the gate, and nowhere else. A stored value that
+// cannot be decrypted (key rotated away, tampered row) is treated as
+// no key, not as ciphertext passed to the provider.
 function resolveApiKey(user) {
   if (!user) return null;
 
@@ -9,7 +14,7 @@ function resolveApiKey(user) {
   }
 
   if (user.openrouterApiKey) {
-    return user.openrouterApiKey;
+    return decryptKey(user.openrouterApiKey);
   }
 
   return null;
@@ -70,8 +75,9 @@ async function requireOpenRouterAccess(req, res) {
     return { user, apiKey, creditFunded: false };
   }
 
-  if (user.openrouterApiKey) {
-    return { user, apiKey: user.openrouterApiKey, creditFunded: false };
+  const ownKey = decryptKey(user.openrouterApiKey);
+  if (ownKey) {
+    return { user, apiKey: ownKey, creditFunded: false };
   }
 
   const sharedKey = process.env.OPENROUTER_API_KEY || null;

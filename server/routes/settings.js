@@ -1,16 +1,26 @@
 const express = require('express');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { encryptKey, decryptKey } = require('../services/keyCrypto');
 
 const router = express.Router();
 
 router.get('/api-key', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('+openrouterApiKey');
-    const key = user?.openrouterApiKey;
+    const stored = user?.openrouterApiKey;
 
-    if (!key) {
+    if (!stored) {
       return res.json({ success: true, hasApiKey: false, maskedKey: null });
+    }
+
+    // Mask the decrypted key, never the stored blob: masking ciphertext
+    // would expose the encryption format and hide the real key shape.
+    // A stored value that cannot be decrypted still counts as a key
+    // on file, but there is nothing safe to show for it.
+    const key = decryptKey(stored);
+    if (!key) {
+      return res.json({ success: true, hasApiKey: true, maskedKey: null });
     }
 
     const masked = key.substring(0, 8) + '****...****' + key.slice(-4);
@@ -45,7 +55,10 @@ router.post('/api-key', auth, async (req, res) => {
     }
 
     // ✅ FIX: use req.user._id instead of req.user.id
-    await User.findByIdAndUpdate(req.user._id, { openrouterApiKey: apiKey });
+    // Stored encrypted when KEY_ENCRYPTION_KEY is set (keyCrypto
+    // returns the value unchanged without one, so this is safe to
+    // deploy before the operator sets the key).
+    await User.findByIdAndUpdate(req.user._id, { openrouterApiKey: encryptKey(apiKey) });
 
     res.json({ success: true, message: 'API key saved successfully. Rate limits removed!' });
   } catch (err) {
