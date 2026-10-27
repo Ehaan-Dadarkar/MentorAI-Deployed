@@ -19,6 +19,7 @@ const uploadRoutes = require("./routes/upload");
 const dashboardRoutes = require("./routes/dashboard");
 const knowledgeGraphRoutes = require("./routes/knowledge-graph");
 const settingsRoutes = require("./routes/settings");
+const creditsRoutes = require("./routes/credits");
 const { requestLogger, errorLogger } = require("./middleware/logger");
 const { globalLimiter, loginLimiter, rateLimitInfoMiddleware } = require("./middleware/rateLimiter");
 const User = require("./models/User");
@@ -99,6 +100,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/knowledge-graph", knowledgeGraphRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/credits", creditsRoutes);
 
 // Health check
 app.get(["/health", "/healthz", "/api/health"], (_req, res) => {
