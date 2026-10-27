@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 import { useNexusStore } from "@/store/nexusStore";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NexusCommandPalette } from "@/components/NexusCommandPalette";
 import ApiKeyGateModal from "@/components/modals/ApiKeyGateModal";
 import { LoadingSkeleton } from "@/components/ui/States";
@@ -171,6 +172,7 @@ export default function App() {
         </div>
       }
     >
+      <ErrorBoundary resetKey={location.pathname}>
       <Routes>
         <Route
           path="/login"
@@ -198,6 +200,7 @@ export default function App() {
         />
       </Routes>
       <Analytics />
+      </ErrorBoundary>
     </Suspense>
   );
 }
