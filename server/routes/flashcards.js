@@ -5,7 +5,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/openrouter");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const { calculateSM2 } = require("../services/sm2");
 const Deck = require("../models/Deck");
@@ -523,6 +523,7 @@ router.post(
 
       res.status(201).json({ deck, cards, count: cards.length });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },
@@ -571,6 +572,7 @@ router.post(
 
       res.status(201).json({ deck, cards, count: cards.length });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },
@@ -629,6 +631,7 @@ Return plain text only.`,
 
       res.json({ suggestion: String(suggestion || "").trim() });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },

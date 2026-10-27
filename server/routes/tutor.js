@@ -6,7 +6,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { generateFlashcards } = require("../services/ai");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { recordUsage, normalizeUsage, usageCallbackFor } = require("../services/usage");
 const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
@@ -679,6 +679,7 @@ router.post(
       });
       res.json({ flashcards });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },

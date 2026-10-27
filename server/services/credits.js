@@ -31,6 +31,23 @@ function creditCostPerAiCall() {
   return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
 }
 
+// Returns `amount` credits to the user. Used only to refund a
+// credit-funded AI request that delivered no result (provider
+// failure, or an early error return after the gate spent). The
+// increment is unconditional: the caller has already decided the
+// spend bought nothing, and refundCreditSpend() in
+// openrouterAccess.js clears the spend token before calling this,
+// so one request can never refund twice.
+async function refundCredits(userId, amount) {
+  if (!Number.isFinite(amount) || amount < 1) return null;
+  const updated = await User.findByIdAndUpdate(
+    userId,
+    { $inc: { creditBalance: amount } },
+    { new: true },
+  ).select("creditBalance");
+  return updated ? updated.creditBalance : null;
+}
+
 // True when the user holds at least `amount` credits.
 async function hasCredits(userId, amount) {
   const balance = await getBalance(userId);
@@ -103,6 +120,7 @@ module.exports = {
   getBalance,
   hasCredits,
   spendCredits,
+  refundCredits,
   applyCapture,
   creditCostPerAiCall,
 };

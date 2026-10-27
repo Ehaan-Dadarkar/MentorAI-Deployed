@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { summarizeContent, callOpenRouter } = require("../services/ai");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
 
@@ -223,8 +223,12 @@ router.post("/:id/summarize", auth, dynamicAiLimiter, async (req, res, next) => 
     if (!access) return;
 
     const note = await Note.findOne({ _id: req.params.id, userId: req.userId });
-    if (!note) return res.status(404).json({ error: "Note not found" });
+    if (!note) {
+      await refundCreditSpend(req);
+      return res.status(404).json({ error: "Note not found" });
+    }
     if (!note.content || note.content.length < 50) {
+      await refundCreditSpend(req);
       return res
         .status(400)
         .json({ error: "Note content too short to summarize" });
@@ -236,6 +240,7 @@ router.post("/:id/summarize", auth, dynamicAiLimiter, async (req, res, next) => 
     });
     res.json({ summary });
   } catch (error) {
+    await refundCreditSpend(req);
     next(error);
   }
 });
@@ -256,8 +261,12 @@ router.post(
       if (!access) return;
 
       const note = await Note.findOne({ _id: req.params.id, userId: req.userId });
-      if (!note) return res.status(404).json({ error: "Note not found" });
+      if (!note) {
+        await refundCreditSpend(req);
+        return res.status(404).json({ error: "Note not found" });
+      }
       if (!note.content || note.content.trim().length < 10) {
+        await refundCreditSpend(req);
         return res.status(400).json({ error: "Note content too short to translate" });
       }
 
@@ -280,6 +289,7 @@ Return only the translated text without extra commentary.`,
 
       res.json({ translated: String(translated || "").trim(), language });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },

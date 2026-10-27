@@ -5,7 +5,7 @@ const auth = require("../middleware/auth");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { extractTextFromPDF } = require("../services/pdfParser");
 const { callOpenRouter } = require("../services/ai");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
 
@@ -225,6 +225,7 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
     if (!access) return;
 
     if (!req.file) {
+      await refundCreditSpend(req);
       return res.status(400).json({ error: "No file uploaded" });
     }
 
@@ -232,12 +233,14 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
     try {
       parsedPdf = await extractTextFromPDF(req.file.buffer);
     } catch {
+      await refundCreditSpend(req);
       return res.status(422).json({ error: "Failed to parse PDF file" });
     }
 
     const { text, numPages } = parsedPdf;
 
     if (!text || text.trim().length < 10) {
+      await refundCreditSpend(req);
       return res.status(400).json({ error: "Could not extract text from PDF" });
     }
 
@@ -278,6 +281,7 @@ Return only valid JSON.`,
         ),
       ]);
     } catch {
+      await refundCreditSpend(req);
       return res.status(502).json({ error: "AI service failed to process PDF content" });
     }
 
@@ -288,6 +292,7 @@ Return only valid JSON.`,
       const parsed = parseStructuredPdf(String(structuredRaw || ""));
       normalized = normalizeStructuredPayload(parsed, req.body.title || fallbackTitle, text);
     } catch {
+      await refundCreditSpend(req);
       return res.status(502).json({ error: "AI returned invalid JSON structure" });
     }
 
@@ -314,6 +319,7 @@ Return only valid JSON.`,
       numPages,
     });
   } catch (error) {
+    await refundCreditSpend(req);
     next(error);
   }
 });

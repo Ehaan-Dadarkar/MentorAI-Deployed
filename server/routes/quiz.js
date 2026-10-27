@@ -4,7 +4,7 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Quiz = require("../models/Quiz");
 const User = require("../models/User");
@@ -426,6 +426,7 @@ router.post(
         deck,
       });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },

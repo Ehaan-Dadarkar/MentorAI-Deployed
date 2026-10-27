@@ -28,10 +28,13 @@ function resolveApiKey(user) {
 //      credits.creditCostPerAiCall() per request. The spend happens
 //      here, inside the gate, so every route that already calls this
 //      function is gated without per-route edits — a route cannot
-//      forget to charge. The charge is per request attempt, not per
-//      successful answer: a provider failure after the gate still
-//      costs the credits. Refunding failed attempts is a follow-up,
-//      not silently assumed here.
+//      forget to charge. The spend is recorded on req.creditSpend
+//      so the route can give it back: every non-streaming route
+//      calls refundCreditSpend(req) when the request fails before
+//      delivering an AI result (thrown error, or an early error
+//      return after the gate). The tutor chat stream is the one
+//      exception — a stream that dies mid-answer already delivered
+//      part of an answer, so its charge is kept.
 //   4. Everyone else: 402, unchanged in shape from before except
 //      that the keyless-credit case also reports the balance and
 //      the required cost, so the client can point the user at the
@@ -125,6 +128,11 @@ async function requireOpenRouterAccess(req, res) {
     return null;
   }
 
+  // The refund token: the route owns giving this spend back when
+  // the request delivers no AI result. Only the credit-funded path
+  // sets it, so demo and own-key requests are never refundable.
+  req.creditSpend = { userId, amount: cost };
+
   return {
     user,
     apiKey: sharedKey,
@@ -134,7 +142,26 @@ async function requireOpenRouterAccess(req, res) {
   };
 }
 
+// Gives back the credits this request spent, exactly once. Returns
+// the new balance, or null when there was nothing to refund (no
+// spend on this request, or already refunded) or the refund failed.
+// A failed refund never throws: it must not mask the original error
+// the route is already handling, and the balance stays short by the
+// spent amount rather than the request failing twice.
+async function refundCreditSpend(req) {
+  const spend = req ? req.creditSpend : null;
+  if (!spend) return null;
+  req.creditSpend = null;
+  try {
+    return await credits.refundCredits(spend.userId, spend.amount);
+  } catch (err) {
+    console.error("Error refunding credits", err);
+    return null;
+  }
+}
+
 module.exports = {
   resolveApiKey,
   requireOpenRouterAccess,
+  refundCreditSpend,
 };

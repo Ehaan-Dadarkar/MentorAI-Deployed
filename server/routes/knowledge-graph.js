@@ -2,7 +2,7 @@ const express = require("express");
 const auth = require("../middleware/auth");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
 const { callOpenRouter } = require("../services/ai");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Quiz = require("../models/Quiz");
 const VoiceSession = require("../models/VoiceSession");
@@ -833,6 +833,7 @@ async function buildNoteCentricGraph({ notes, quizzes, voiceSessions, deckStatsM
         addEdge(edges, edgeSet, aiEdge);
       }
     } catch (error) {
+      await refundCreditSpend(req);
       console.warn("Knowledge graph concept linking fallback:", error.message);
     }
   }

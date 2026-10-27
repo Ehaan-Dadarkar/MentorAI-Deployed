@@ -4,7 +4,7 @@ const { z } = require("zod");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
-const { requireOpenRouterAccess } = require("../services/openrouterAccess");
+const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const {
   generateVoiceRecallQuestions,
   evaluateVoiceAnswer,
@@ -47,6 +47,7 @@ router.post(
       // Fetch note from DB
       const note = await Note.findOne({ _id: noteId, userId: req.userId });
       if (!note) {
+        await refundCreditSpend(req);
         return res.status(404).json({
           success: false,
           message: "Note not found",
@@ -54,6 +55,7 @@ router.post(
       }
 
       if (!note.content || note.content.length < 10) {
+        await refundCreditSpend(req);
         return res.status(400).json({
           success: false,
           message: "Note content too short for question generation",
@@ -87,6 +89,7 @@ router.post(
       }
 
       if (truncatedContent.length < 10) {
+        await refundCreditSpend(req);
         return res.status(400).json({
           success: false,
           message: "Note content too short after processing",
@@ -107,6 +110,7 @@ router.post(
         questions,
       });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },
@@ -171,6 +175,7 @@ router.post(
         evaluation,
       });
     } catch (error) {
+      await refundCreditSpend(req);
       next(error);
     }
   },
