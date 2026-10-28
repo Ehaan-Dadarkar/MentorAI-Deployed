@@ -21,7 +21,7 @@ const axios = require("axios");
 const User = require("../models/User");
 const transcribeRouter = require("../routes/transcribe");
 
-const JWT_SECRET = "test-transcribe-secret";
+const JWT_SECRET = "transcribe-test-secret-at-least-32-chars";
 
 function stubAuthUser(t, userDoc) {
   const original = User.findById;

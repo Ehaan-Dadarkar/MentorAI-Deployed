@@ -1,6 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const { signToken, verifyToken } = require("../services/jwt");
 const { z } = require("zod");
 const User = require("../models/User");
 const validate = require("../middleware/validate");
@@ -21,8 +21,13 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
+});
+
+const generateToken = (userId, tokenVersion = 0) => {
+  return signToken(userId, tokenVersion);
 };
 
 const setTokenCookie = (res, token) => {
@@ -54,7 +59,7 @@ router.post(
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await User.create({ name, email, passwordHash });
 
-      const token = generateToken(user._id);
+      const token = generateToken(user._id, user.tokenVersion ?? 0);
       setTokenCookie(res, token);
 
       // re-read with the private field selected so the client gets an accurate boolean
@@ -104,7 +109,7 @@ router.post(
           .json({ success: false, message: "Invalid email or password" });
       }
 
-      const token = generateToken(user._id);
+      const token = generateToken(user._id, user.tokenVersion ?? 0);
       setTokenCookie(res, token);
 
       res.json({
@@ -151,7 +156,7 @@ router.post("/demo-login", loginLimiter, async (_req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.tokenVersion ?? 0);
     setTokenCookie(res, token);
 
     res.json({
@@ -174,15 +179,77 @@ router.post("/demo-login", loginLimiter, async (_req, res, next) => {
   }
 });
 
-// POST /api/auth/logout
-router.post("/logout", (_req, res) => {
+const clearTokenCookie = (res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   });
+};
+
+// POST /api/auth/logout
+router.post("/logout", (_req, res) => {
+  clearTokenCookie(res);
   res.json({ success: true, message: "Logged out" });
+});
+
+// POST /api/auth/logout-everywhere
+// Session revocation (Backend M8): bumps the user's tokenVersion,
+// so every token issued before this call — on every device, including
+// a stolen one — fails the middleware version check from now on.
+// Plain /logout only clears this browser's cookie. The demo account
+// is deliberately not blocked here: it is a shared try-it account
+// and re-login is one passwordless click.
+router.post("/logout-everywhere", auth, async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.userId, { $inc: { tokenVersion: 1 } });
+    clearTokenCookie(res);
+    res.json({ success: true, message: "Logged out everywhere" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/change-password
+// No password-change endpoint existed, so there was nothing to bump
+// the version on (Backend M8). This endpoint verifies the current
+// password, hashes the new one, and bumps tokenVersion, so every
+// other session — including a stolen token — dies with the change.
+// The current session's token dies too, so the cookie is cleared and
+// the client must log in again with the new password. Demo is
+// blocked, like profile changes: the demo password is
+// operator-managed via DEMO_PASSWORD at boot.
+router.post("/change-password", auth, validate(changePasswordSchema), async (req, res, next) => {
+  try {
+    if (req.user.isDemo) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Demo account settings cannot be changed." });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.userId).select("+passwordHash");
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ success: false, message: "Current password is incorrect" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await User.findByIdAndUpdate(req.userId, {
+      $set: { passwordHash },
+      $inc: { tokenVersion: 1 },
+    });
+    clearTokenCookie(res);
+    res.json({ success: true, message: "Password changed. Please log in again." });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // GET /api/auth/me
@@ -196,7 +263,7 @@ router.get("/me", async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      decoded = verifyToken(token);
     } catch {
       return res.json({ success: true, user: null });
     }
@@ -205,6 +272,12 @@ router.get("/me", async (req, res, next) => {
       .select("-passwordHash")
       .select("+openrouterApiKey");
     if (!user) {
+      return res.json({ success: true, user: null });
+    }
+
+    // Same revocation check as the auth middleware: a stale-version
+    // token reads as no user here, so /me cannot resurrect it.
+    if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
       return res.json({ success: true, user: null });
     }
 

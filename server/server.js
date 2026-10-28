@@ -8,6 +8,18 @@ const bcrypt = require("bcryptjs");
 
 dotenv.config();
 
+const { assertJwtSecret } = require("./services/jwt");
+
+// Fail fast (Backend m20): auth is meaningless without a real JWT
+// secret, and a short one is brute-forceable. Refuse to boot rather
+// than serve signed tokens under a weak or missing secret. The error
+// names the variable only, never its value. NOTE FOR DEPLOY: if the
+// Render JWT_SECRET is shorter than 32 characters, this service will
+// not boot after this change until that variable is rotated to a
+// value at least 32 characters long (rotation invalidates all
+// existing tokens, so users simply log in again).
+assertJwtSecret();
+
 const authRoutes = require("./routes/auth");
 const tutorRoutes = require("./routes/tutor");
 const flashcardRoutes = require("./routes/flashcards");

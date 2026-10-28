@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const { verifyToken } = require("../services/jwt");
 const User = require("../models/User");
 
 const auth = (req, res, next) => {
@@ -11,16 +11,26 @@ const auth = (req, res, next) => {
         .json({ success: false, message: "Authentication required" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     req.userId = decoded.userId;
 
     Promise.resolve(
       User.findById(decoded.userId).select(
-        "name email subjects studyGoalMinutes streak lastStudyDate weakTopics openrouterApiKey isDemo",
+        "name email subjects studyGoalMinutes streak lastStudyDate weakTopics openrouterApiKey isDemo tokenVersion",
       ),
     )
       .then((user) => {
         if (!user) {
+          return res.status(401).json({ success: false, message: "Invalid token" });
+        }
+
+        // Session revocation (Backend M8): a token whose version no
+        // longer matches the user was issued before a logout-everywhere
+        // or password change, so it is dead even though its signature
+        // and expiry are still valid. Tokens issued before tokenVersion
+        // existed carry no version claim and read as 0, matching a user
+        // that has never bumped.
+        if ((decoded.tokenVersion ?? 0) !== (user.tokenVersion ?? 0)) {
           return res.status(401).json({ success: false, message: "Invalid token" });
         }
 

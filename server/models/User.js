@@ -57,6 +57,13 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Session revocation (Backend M8): bumped on logout-everywhere and on password change; the auth
+    // middleware rejects tokens carrying an older version.
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
