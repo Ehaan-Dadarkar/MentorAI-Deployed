@@ -191,10 +191,11 @@ export default function QuizPage() {
   const [isDeckDetailLoading, setIsDeckDetailLoading] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
 
-  const totalQuizSeconds = count * 45;
+  const totalQuizSeconds = (currentQuiz?.questions.length ?? count) * 45;
   const timeLeft = Math.max(0, totalQuizSeconds - elapsedSeconds);
 
   const libraryCards = useMemo(() => {
@@ -290,7 +291,7 @@ export default function QuizPage() {
   }, [view, currentQuiz, questionIndex, answers, setAnswer]);
 
   const openNewDeckSetup = () => {
-    resetSession(); setSourceError(null); setQuestionIndex(0);
+    resetSession(); setSourceError(null); setSubmitError(null); setQuestionIndex(0);
     setElapsedSeconds(0); setExpandedRows({}); setCreateFlashcardDeck(false);
     setIsNewDeckModalOpen(true);
   };
@@ -352,7 +353,7 @@ export default function QuizPage() {
   const handleStartDeckQuiz = async (quizId: string) => {
     try {
       await fetchQuiz(quizId);
-      setQuestionIndex(0); setElapsedSeconds(0); setExpandedRows({});
+      setQuestionIndex(0); setElapsedSeconds(0); setExpandedRows({}); setSubmitError(null);
       setView("quiz");
     } catch { setLibraryError("Failed to load quiz."); }
   };
@@ -371,12 +372,23 @@ export default function QuizPage() {
   };
 
   const handleFinishQuiz = async () => {
-    const data = await submitQuiz(elapsedSeconds);
-    setExpandedRows({});
-    if (selectedDeckForDetailId) await loadDeckDetail(selectedDeckForDetailId);
-    await loadLibraryData();
-    setView("results");
-    return data;
+    setSubmitError(null);
+    try {
+      const data = await submitQuiz(elapsedSeconds);
+      setExpandedRows({});
+      if (selectedDeckForDetailId) await loadDeckDetail(selectedDeckForDetailId);
+      await loadLibraryData();
+      setView("results");
+      return data;
+    } catch {
+      // Stay in the quiz view: the answers are still in the store, so a
+      // retry re-submits the same attempt instead of losing it. The old
+      // code let the throw escape with no message, and the time-up effect
+      // never re-ran (its deps were unchanged), leaving a finished-but-
+      // unsubmitted quiz with no way forward except guessing CONCLUDE.
+      setSubmitError("SUBMISSION FAILED — YOUR ANSWERS ARE STILL HERE. TRY AGAIN.");
+      return undefined;
+    }
   };
 
   const handleBackToLibrary = () => { setExpandedRows({}); setView("library"); };
@@ -849,6 +861,19 @@ export default function QuizPage() {
                   </div>
                 </div>
               </motion.div>
+
+              <AnimatePresence>
+                {submitError && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                    <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      <p className="flex-1 text-[10px] font-bold tracking-widest text-[#FF3D00] uppercase">[ ERROR ] {submitError}</p>
+                      <PrimaryButton onClick={() => void handleFinishQuiz()} disabled={isSubmitting} className="sm:w-auto">
+                        {isSubmitting ? "PROCESSING..." : "RETRY SUBMIT"}
+                      </PrimaryButton>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <motion.div variants={fadeUp} className="border border-[#262626] bg-[#0A0A0A] p-5 sm:p-8 md:p-12">
                 <p className="text-lg sm:text-2xl md:text-3xl font-black text-[#FAFAFA] leading-tight mb-6 sm:mb-10 md:mb-12">
