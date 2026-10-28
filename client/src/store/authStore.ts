@@ -11,6 +11,8 @@ interface AuthState {
   demoLogin: () => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutEverywhere: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   checkAuth: () => Promise<void>;
   updateProfile: (
     data: Partial<
@@ -46,6 +48,24 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await api.post("/auth/logout");
+    set({ user: null, isAuthenticated: false, sessionExpired: false });
+  },
+  // Slice 44: session revocation (Backend M8) client. The server bumps
+  // tokenVersion and clears the cookie, so every session dies; the
+  // store clears state and ProtectedRoute navigates to /login.
+  logoutEverywhere: async () => {
+    await api.post("/auth/logout-everywhere");
+    set({ user: null, isAuthenticated: false, sessionExpired: false });
+  },
+
+  // On success the server bumps tokenVersion and clears the cookie,
+  // so this session is dead too: state clears and the user logs in
+  // again with the new password. On failure the error is rethrown for
+  // the caller to surface, and auth state is left untouched — a wrong
+  // current password is a 400 (slice 44 server change), never a 401,
+  // so it cannot trip the global session-expired handler.
+  changePassword: async (currentPassword, newPassword) => {
+    await api.post("/auth/change-password", { currentPassword, newPassword });
     set({ user: null, isAuthenticated: false, sessionExpired: false });
   },
 

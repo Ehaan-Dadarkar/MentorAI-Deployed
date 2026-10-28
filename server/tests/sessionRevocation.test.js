@@ -199,13 +199,15 @@ test("logout-everywhere bumps tokenVersion and clears the cookie", async (t) => 
   assert.match(res.setCookie, /token=;/);
 });
 
-test("change-password with a wrong current password is 401 with no update", async (t) => {
+test("change-password with a wrong current password is 400 with no update", async (t) => {
   const { post, updates } = await startAuthApp(t);
   const res = await post("/change-password", {
     currentPassword: "not-the-password",
     newPassword: "new-password-123",
   });
-  assert.equal(res.status, 401);
+  // 400, not 401: the token is valid, only the submitted password is wrong,
+  // and a 401 would trip the client's global session-expired handler.
+  assert.equal(res.status, 400);
   assert.equal(updates.length, 0);
 });
 

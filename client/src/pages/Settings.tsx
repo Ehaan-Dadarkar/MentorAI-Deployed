@@ -57,12 +57,32 @@ const PrimaryButton = ({
   </motion.button>
 );
 
+// Slice 44: surfaces a server error message (message, then error) without
+// an `any` catch — the repo lints `any` in new code (see slice 7 notes).
+function serverErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === "object" && err !== null && "response" in err) {
+    const data = (
+      err as { response?: { data?: { message?: unknown; error?: unknown } } }
+    ).response?.data;
+    if (typeof data?.message === "string" && data.message) return data.message;
+    if (typeof data?.error === "string" && data.error) return data.error;
+  }
+  return fallback;
+}
+
 export default function Settings() {
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, logoutEverywhere, changePassword } =
+    useAuthStore();
   const isDemo = Boolean(user?.isDemo);
   const [name, setName] = useState(user?.name || "");
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [secError, setSecError] = useState("");
+  const [isChanging, setIsChanging] = useState(false);
+  const [isLoggingOutEverywhere, setIsLoggingOutEverywhere] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const apiKeyRef = useRef<ApiKeySettingsRef>(null);
@@ -92,6 +112,59 @@ export default function Settings() {
       // individual components surface their own errors via their own state
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Slice 44: session revocation (Backend M8) client. Client-side checks
+  // mirror the server zod schema (new password 8-100 chars) so a typo
+  // fails here without a round trip; the server still enforces them.
+  const handleChangePassword = async () => {
+    if (isDemo) return;
+    setSecError("");
+    if (!currentPassword) {
+      setSecError("ENTER YOUR CURRENT PASSWORD");
+      return;
+    }
+    if (newPassword.length < 8 || newPassword.length > 100) {
+      setSecError("NEW PASSWORD MUST BE 8-100 CHARACTERS");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setSecError("NEW PASSWORDS DO NOT MATCH");
+      return;
+    }
+    setIsChanging(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      // Success clears auth state in the store, so ProtectedRoute
+      // navigates to /login: the user logs in again with the new
+      // password, and every other session (including a stolen one)
+      // is dead with the token-version bump.
+    } catch (err) {
+      setSecError(serverErrorMessage(err, "FAILED TO CHANGE PASSWORD"));
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
+  const handleLogoutEverywhere = async () => {
+    if (
+      !window.confirm(
+        "LOG OUT ON ALL DEVICES? THIS ENDS EVERY SESSION, INCLUDING THIS ONE.",
+      )
+    )
+      return;
+    setSecError("");
+    setIsLoggingOutEverywhere(true);
+    try {
+      await logoutEverywhere();
+      // Success clears auth state in the store, so ProtectedRoute
+      // navigates to /login; re-login is one click (passwordless demo
+      // included, by server design).
+    } catch (err) {
+      setSecError(serverErrorMessage(err, "FAILED TO LOG OUT EVERYWHERE"));
+    } finally {
+      setIsLoggingOutEverywhere(false);
     }
   };
 
@@ -220,6 +293,94 @@ export default function Settings() {
 
                   {/* ── API KEY ── */}
                   <ApiKeySettings ref={apiKeyRef} />
+
+                  {/* ── SECURITY ── */}
+                  <section>
+                    <div className="flex items-center gap-4 mb-8 sm:mb-12">
+                      <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">
+                        SECURITY
+                      </h2>
+                      <div className="h-px flex-1 bg-[#262626]" />
+                      <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+                        03 ITEMS
+                      </span>
+                    </div>
+
+                    <div className="space-y-6 sm:space-y-8">
+                      {/* Change password — blocked for demo, like profile changes */}
+                      <div>
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                          CHANGE PASSWORD
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="CURRENT PASSWORD..."
+                          disabled={isDemo}
+                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
+                        />
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="NEW PASSWORD (8-100 CHARACTERS)..."
+                          disabled={isDemo}
+                          className="mt-6 w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
+                        />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="CONFIRM NEW PASSWORD..."
+                          disabled={isDemo}
+                          className="mt-6 w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
+                        />
+                        <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-[#737373] uppercase">
+                          CHANGING YOUR PASSWORD LOGS OUT EVERY SESSION, INCLUDING THIS ONE.
+                        </p>
+                        {isDemo && (
+                          <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                            NOT AVAILABLE FOR THE DEMO ACCOUNT.
+                          </p>
+                        )}
+                        <div className="mt-4">
+                          <PrimaryButton
+                            onClick={handleChangePassword}
+                            disabled={isChanging || isDemo}
+                          >
+                            {isChanging ? "CHANGING..." : "CHANGE PASSWORD"}
+                          </PrimaryButton>
+                        </div>
+                      </div>
+
+                      {/* Log out everywhere — allowed for demo by server design */}
+                      <div>
+                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                          SESSIONS
+                        </label>
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#737373] uppercase">
+                          LOG OUT EVERYWHERE ENDS YOUR SESSION ON ALL DEVICES, INCLUDING A STOLEN TOKEN.
+                        </p>
+                        <div className="mt-4">
+                          <PrimaryButton
+                            onClick={handleLogoutEverywhere}
+                            disabled={isLoggingOutEverywhere}
+                          >
+                            {isLoggingOutEverywhere
+                              ? "LOGGING OUT..."
+                              : "LOG OUT EVERYWHERE"}
+                          </PrimaryButton>
+                        </div>
+                      </div>
+
+                      {secError && (
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                          {secError}
+                        </p>
+                      )}
+                    </div>
+                  </section>
 
                   {/* ── MOBILE SAVE BUTTON ── */}
                   <div className="sm:hidden pt-4 border-t border-[#262626]">

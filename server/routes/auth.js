@@ -237,7 +237,11 @@ router.post("/change-password", auth, validate(changePasswordSchema), async (req
 
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
-      return res.status(401).json({ success: false, message: "Current password is incorrect" });
+      // 400, not 401: the token already passed the auth middleware, so a
+      // wrong current password is a bad request body, not a dead session.
+      // A 401 here would trip the client's global session-expired handler
+      // and log the user out over a typo, with the password unchanged.
+      return res.status(400).json({ success: false, message: "Current password is incorrect" });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
