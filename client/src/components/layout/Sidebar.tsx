@@ -449,6 +449,20 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+
+        {/* Logout */}
+        <div className="border-t border-[#262626] px-2 py-2">
+          <button
+            onClick={() => logout()}
+            className="flex items-center justify-center p-2.5 w-full text-[#737373] hover:text-[#FF3D00] hover:bg-[#262626] transition-all relative group"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+              Logout
+            </div>
+          </button>
+        </div>
       </aside>
 
       {/* ─────────────────────────────────────────────────────────
