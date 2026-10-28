@@ -8,13 +8,40 @@ const { callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
+const fs = require("fs");
+const os = require("os");
+const crypto = require("crypto");
 
 const router = express.Router();
 
-const storage = multer.memoryStorage();
+// PDF import bounds (AI/data M12): disk storage keeps large uploads out of
+// the Node heap, the size cap bounds the file, and the page cap bounds the
+// parse work. A scanned/image-only PDF has no extractable text, which gets
+// its own message instead of the generic extraction failure.
+const PDF_MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
+const PDF_MAX_PAGES = 200;
+const SCANNED_PDF_MESSAGE =
+  "This PDF has no extractable text - it may be a scanned or image-only PDF.";
+
+function validateParsedPdf(parsed) {
+  if (!parsed) return "Failed to parse PDF file";
+  if (typeof parsed.numPages === "number" && parsed.numPages > PDF_MAX_PAGES) {
+    return `PDF exceeds the ${PDF_MAX_PAGES}-page limit`;
+  }
+  if (String(parsed.text || "").trim().length < 10) {
+    return SCANNED_PDF_MESSAGE;
+  }
+  return null;
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, os.tmpdir()),
+  filename: (_req, _file, cb) =>
+    cb(null, `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.pdf`),
+});
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: PDF_MAX_FILE_SIZE_BYTES },
   fileFilter: (_req, file, cb) => {
     const looksLikePdf =
       file.mimetype === "application/pdf" ||
@@ -189,12 +216,22 @@ function generateHTMLFromAI(data) {
 function uploadPdfMiddleware(req, res, next) {
   upload.single("file")(req, res, (error) => {
     if (!error) {
+      if (req.file && req.file.path) {
+        const uploadedPath = req.file.path;
+        res.on("finish", () => {
+          fs.unlink(uploadedPath, () => {});
+        });
+      }
       return next();
+    }
+
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, () => {});
     }
 
     if (error instanceof multer.MulterError) {
       if (error.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({ error: "PDF file size must be 50MB or less" });
+        return res.status(400).json({ error: "PDF file size must be 15MB or less" });
       }
       return res.status(400).json({ error: error.message });
     }
@@ -231,7 +268,8 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
 
     let parsedPdf;
     try {
-      parsedPdf = await extractTextFromPDF(req.file.buffer);
+      const buffer = await fs.promises.readFile(req.file.path);
+      parsedPdf = await extractTextFromPDF(buffer);
     } catch {
       await refundCreditSpend(req);
       return res.status(422).json({ error: "Failed to parse PDF file" });
@@ -239,9 +277,10 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
 
     const { text, numPages } = parsedPdf;
 
-    if (!text || text.trim().length < 10) {
+    const validationError = validateParsedPdf(parsedPdf);
+    if (validationError) {
       await refundCreditSpend(req);
-      return res.status(400).json({ error: "Could not extract text from PDF" });
+      return res.status(400).json({ error: validationError });
     }
 
     // Limit the text sent to AI to reduce processing time.
@@ -323,5 +362,11 @@ Return only valid JSON.`,
     next(error);
   }
 });
+
+router.pdfLimits = {
+  maxFileSizeBytes: PDF_MAX_FILE_SIZE_BYTES,
+  maxPages: PDF_MAX_PAGES,
+};
+router.validateParsedPdf = validateParsedPdf;
 
 module.exports = router;
