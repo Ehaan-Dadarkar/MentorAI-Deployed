@@ -28,30 +28,61 @@ function buildDeletedQuery(deletedValue) {
   };
 }
 
+// Escape a user search string before it reaches $regex (Backend M9):
+// without this, a search term is a live regular expression, so a
+// pathological pattern can burn CPU (ReDoS) and a term like ".*" can
+// match everything.
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Build the notes-list filter. A search term is ANDed with the
+// deleted/trash filter instead of overwriting its $or (Backend M9):
+// the old code assigned filter.$or for the search, discarding the
+// deleted filter, so a search resurfaced trashed notes.
+function buildNotesListFilter({ userId, deletedFlag, subject, search }) {
+  const deletedQuery = buildDeletedQuery(deletedFlag);
+  const filter = { userId };
+  if (subject) {
+    filter.subject = subject;
+  }
+  if (search) {
+    const escaped = escapeRegExp(search);
+    filter.$and = [
+      deletedQuery,
+      {
+        $or: [
+          { title: { $regex: escaped, $options: "i" } },
+          { content: { $regex: escaped, $options: "i" } },
+          { tags: { $regex: escaped, $options: "i" } },
+        ],
+      },
+    ];
+  } else {
+    Object.assign(filter, deletedQuery);
+  }
+  return filter;
+}
+
+router.escapeRegExp = escapeRegExp;
+router.buildNotesListFilter = buildNotesListFilter;
+
 // GET /api/notes
 router.get("/", auth, async (req, res, next) => {
   try {
     const { deleted, isDeleted, subject, search } = req.query;
-    const filter = { userId: req.userId };
     const deletedFlag = String(isDeleted ?? deleted ?? "false");
-
-    Object.assign(filter, buildDeletedQuery(deletedFlag));
-
-    if (subject) {
-      filter.subject = subject;
-    }
-
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { content: { $regex: search, $options: "i" } },
-        { tags: { $regex: search, $options: "i" } },
-      ];
-    }
+    const filter = buildNotesListFilter({
+      userId: req.userId,
+      deletedFlag,
+      subject,
+      search,
+    });
 
     const notes = await Note.find(filter)
       .sort({ updatedAt: -1 })
-      .select("title subject tags sourceType summary createdAt updatedAt isDeleted deleted");
+      .select("title subject tags sourceType summary createdAt updatedAt isDeleted deleted")
+      .maxTimeMS(5000);
 
     res.json({ notes });
   } catch (error) {
