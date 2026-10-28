@@ -69,6 +69,68 @@ export function shouldRetryColdStart(error: ColdStartRetryCandidate): boolean {
   return status !== undefined && [502, 503, 504].includes(status);
 }
 
+// Double-submit CSRF token (Backend M2 hardening, slice 46): the token
+// is issued by GET /api/auth/csrf-token (cookie + JSON value) and sent
+// back as X-CSRF-Token on every state-changing request. It is fetched
+// lazily here, on the first mutation, so login/register/demo-login —
+// which precede any session — need no prefetch step: the interceptor
+// below fetches the token before the POST. Concurrent mutations share
+// one in-flight fetch. A fetch failure is NOT fatal here: the request
+// proceeds without a header and the response interceptor retries it
+// once after a fresh token fetch (that also wakes a cold Render
+// instance, which is the common reason the token fetch itself fails).
+export const CSRF_HEADER_NAME = "X-CSRF-Token";
+const STATE_CHANGING_METHODS = ["post", "put", "patch", "delete"];
+let cachedCsrfToken: string | null = null;
+let csrfTokenPromise: Promise<string> | null = null;
+
+export function invalidateCsrfToken(): void {
+  cachedCsrfToken = null;
+  csrfTokenPromise = null;
+}
+
+export async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (!forceRefresh && cachedCsrfToken) return cachedCsrfToken;
+  if (!forceRefresh && csrfTokenPromise) return csrfTokenPromise;
+  const promise = (async () => {
+    const response = await fetch(`${API_BASE_URL}/api/auth/csrf-token`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error(`CSRF token fetch failed (${response.status})`);
+    }
+    const data = (await response.json()) as { csrfToken?: string };
+    if (!data?.csrfToken) throw new Error("CSRF token missing from response");
+    cachedCsrfToken = data.csrfToken;
+    return data.csrfToken;
+  })();
+  csrfTokenPromise = promise;
+  try {
+    return await promise;
+  } catch (error) {
+    if (csrfTokenPromise === promise) csrfTokenPromise = null;
+    throw error;
+  }
+}
+
+function setCsrfHeader(
+  config: { headers?: unknown },
+  token: string,
+): void {
+  const headers = config.headers as
+    | { set?: (name: string, value: string) => void }
+    | Record<string, string>
+    | undefined;
+  if (headers && typeof headers.set === "function") {
+    headers.set(CSRF_HEADER_NAME, token);
+  } else {
+    config.headers = {
+      ...(headers as Record<string, string>),
+      [CSRF_HEADER_NAME]: token,
+    };
+  }
+}
+
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   withCredentials: true,
@@ -78,9 +140,19 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   if (isAiEndpoint(config.url)) {
     config.timeout = AI_TIMEOUT_MS;
+  }
+  if (STATE_CHANGING_METHODS.includes(String(config.method || "get").toLowerCase())) {
+    try {
+      setCsrfHeader(config, await getCsrfToken());
+    } catch {
+      // Proceed without a header: the response interceptor retries
+      // once after a fresh token fetch if the server answers 403
+      // CSRF_TOKEN_INVALID (see below). Throwing here would turn a
+      // recoverable cold-start token failure into a login failure.
+    }
   }
   return config;
 });
@@ -105,6 +177,25 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // CSRF retry (slice 46): a 403 CSRF_TOKEN_INVALID means the cached
+    // token is stale or was never fetched (e.g. the token fetch failed
+    // on a cold start). Refetch once and retry the mutation once; a
+    // second 403 is final. The request was rejected before any server
+    // side effect, so retrying a POST here cannot double-create.
+    if (
+      error?.response?.status === 403 &&
+      error.response?.data?.code === "CSRF_TOKEN_INVALID" &&
+      error.config &&
+      !(error.config as { __csrfRetried?: boolean }).__csrfRetried
+    ) {
+      (error.config as { __csrfRetried?: boolean }).__csrfRetried = true;
+      try {
+        setCsrfHeader(error.config, await getCsrfToken(true));
+        return api(error.config);
+      } catch {
+        return Promise.reject(error);
+      }
+    }
     if (shouldRetryColdStart(error)) {
       (error.config as { __m6Retried?: boolean }).__m6Retried = true;
       await new Promise((resolve) => setTimeout(resolve, 1000));

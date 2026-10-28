@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api, { API_BASE_URL } from "@/lib/axios";
+import api, { API_BASE_URL, getCsrfToken } from "@/lib/axios";
 import { openApiKeyGate } from "@/lib/apiKeyGate";
 
 export type TutorRole = "user" | "assistant";
@@ -457,22 +457,44 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }));
     };
 
-    try {
-      const response = await fetch(`${apiUrl}/api/tutor/chat`, {
+    // Tutor stream posts via raw fetch, not the axios instance, so it
+    // carries the double-submit token itself (slice 46). The request body
+    // is built once and reused for the single CSRF retry below.
+    const chatBody = JSON.stringify({
+      messages: payloadMessages,
+      context: state.context || undefined,
+      noteContext: noteContext || undefined,
+      activeSessionId: requestSessionId,
+      mode: get().mode,
+    });
+    // Captured here, not inside postChat: TypeScript does not narrow a
+    // module-level nullable variable inside a closure body.
+    const streamSignal = streamController.signal;
+    const postChat = (csrfToken: string | null) =>
+      fetch(`${apiUrl}/api/tutor/chat`, {
         method: "POST",
-        signal: streamController.signal,
+        signal: streamSignal,
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         },
-        body: JSON.stringify({
-          messages: payloadMessages,
-          context: state.context || undefined,
-          noteContext: noteContext || undefined,
-          activeSessionId: requestSessionId,
-          mode: get().mode,
-        }),
+        body: chatBody,
       });
+    try {
+      let response = await postChat(await getCsrfToken().catch(() => null));
+      // CSRF retry (slice 46): exactly once, before any stream byte is
+      // read, so a stale token cannot strand a send. The first response
+      // was rejected before any server side effect, so retrying is safe.
+      if (response.status === 403) {
+        const probe = await response.clone().json().catch(() => null) as {
+          code?: string;
+        } | null;
+        if (probe?.code === "CSRF_TOKEN_INVALID") {
+          const freshToken = await getCsrfToken(true).catch(() => null);
+          if (freshToken) response = await postChat(freshToken);
+        }
+      }
 
       if (response.status === 402) {
         openApiKeyGate(true);

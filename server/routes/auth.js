@@ -7,6 +7,7 @@ const validate = require("../middleware/validate");
 const auth = require("../middleware/auth");
 const { loginLimiter } = require("../middleware/rateLimiter");
 const { encryptKey } = require("../services/keyCrypto");
+const { issueCsrfToken } = require("../middleware/csrfToken");
 
 const router = express.Router();
 
@@ -39,6 +40,11 @@ const setTokenCookie = (res, token) => {
     path: "/",
   });
 };
+
+// GET /api/auth/csrf-token (Backend M2 hardening, slice 46): issues a
+// double-submit token before any session exists, so login/register/
+// demo-login can carry it. No auth, no limiter beyond the global one.
+router.get("/csrf-token", issueCsrfToken);
 
 // POST /api/auth/register
 router.post(

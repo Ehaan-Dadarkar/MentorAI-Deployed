@@ -28,7 +28,9 @@ const corsMiddleware = cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  // X-CSRF-Token (slice 46): without this, a browser preflight for any
+  // state-changing request carrying the token header would be refused.
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
 });
 
 module.exports = { allowedOrigins, isAllowedOrigin, corsMiddleware };

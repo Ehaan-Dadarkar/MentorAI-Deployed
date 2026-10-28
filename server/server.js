@@ -86,6 +86,7 @@ async function ensureDemoAccount() {
 
 const { corsMiddleware } = require("./middleware/cors");
 const { csrfOriginCheck } = require("./middleware/csrfOrigin");
+const { csrfTokenCheck } = require("./middleware/csrfToken");
 
 // Middleware
 app.use(helmet());
@@ -100,6 +101,10 @@ app.use(csrfOriginCheck);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+// Double-submit CSRF token (Backend M2 hardening, slice 46): must sit
+// after cookieParser (it reads the csrf_token cookie) and before every
+// route, so no router can forget it; see middleware/csrfToken.js.
+app.use(csrfTokenCheck);
 app.use(requestLogger);
 
 // API Routes
