@@ -435,11 +435,28 @@ router.post(
   },
 );
 
+// Questions stored on a quiz, in the shape computeResults grades.
+// This is the single mapping from stored to gradable questions, used
+// by both submit routes, so grading can never drift from storage.
+function storedQuestionsForGrading(quiz) {
+  return quiz.questions.map((q) => ({
+    question: q.question,
+    options: q.options,
+    correctIndex: q.correctAnswer,
+    explanation: q.explanation || "",
+    concept: q.topic || "General",
+  }));
+}
+router.storedQuestionsForGrading = storedQuestionsForGrading;
+
 // POST /api/quiz/submit
 const submitSchema = z.object({
-  quizId: z.string().optional(),
+  quizId: z.string().min(1),
   deckName: z.string().optional(),
   deckId: z.string().optional(),
+  // Accepted for backwards compatibility with older clients, but
+  // deliberately IGNORED: grading always uses the stored quiz's
+  // questions (Backend M5). A client must never supply correctIndex.
   questions: z
     .array(
       z.object({
@@ -450,7 +467,8 @@ const submitSchema = z.object({
         concept: z.string().optional().default("General"),
       }),
     )
-    .min(1),
+    .min(1)
+    .optional(),
   answers: z.array(z.number().int().min(-1).max(3)).min(1),
   timeTaken: z.number().min(0),
   subject: z.string().optional(),
@@ -462,12 +480,47 @@ router.post(
   validate(submitSchema),
   async (req, res, next) => {
     try {
-      const { questions, answers, timeTaken, subject, quizId, deckName, deckId } = req.body;
+      const { answers, timeTaken, deckId } = req.body;
+      const quizId = req.body.quizId;
+      // Grade against the stored quiz, never against client-supplied
+      // questions: the old handler graded the submitted correctIndex,
+      // so a client could submit matching answers and score 100%
+      // (Backend M5). The stored quiz is scoped to the caller, so a
+      // quiz id from another user reads as not found.
+      let stored;
+      try {
+        stored = await Quiz.findOne({ _id: quizId, userId: req.userId });
+      } catch (error) {
+        if (error && error.name === "CastError") {
+          return res.status(400).json({ error: "Invalid quizId" });
+        }
+        throw error;
+      }
+      if (!stored) return res.status(404).json({ error: "Quiz not found" });
+      if (stored.completedAt) {
+        return res.status(400).json({ error: "Quiz already submitted" });
+      }
+      // A deck id on the body may only point at the caller's own deck.
+      let resolvedDeckId = stored.deckId || null;
+      if (deckId) {
+        let deck;
+        try {
+          deck = await Deck.findOne({ _id: deckId, userId: req.userId });
+        } catch (error) {
+          if (error && error.name === "CastError") {
+            return res.status(400).json({ error: "Invalid deckId" });
+          }
+          throw error;
+        }
+        if (!deck) return res.status(400).json({ error: "Deck not found" });
+        resolvedDeckId = deckId;
+      }
+      const questions = storedQuestionsForGrading(stored);
       const result = await persistQuizAndSession({
         userId: req.userId,
-        subject: subject || "General",
-        deckName,
-        deckId,
+        subject: stored.subject || "General",
+        deckName: stored.deckName,
+        deckId: resolvedDeckId,
         existingQuizId: quizId,
         questions,
         answers,
@@ -505,13 +558,7 @@ router.post(
         return res.status(400).json({ error: "Quiz already submitted" });
       }
 
-      const normalizedQuestions = quiz.questions.map((q) => ({
-        question: q.question,
-        options: q.options,
-        correctIndex: q.correctAnswer,
-        explanation: q.explanation || "",
-        concept: q.topic || "General",
-      }));
+      const normalizedQuestions = storedQuestionsForGrading(quiz);
 
       const result = await persistQuizAndSession({
         userId: req.userId,
