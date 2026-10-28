@@ -24,6 +24,8 @@ import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { cn } from "@/lib/utils";
 import { useConversationStore } from "@/store/conversationStore";
+import { useSearchParams } from "react-router-dom";
+import { parseTutorDeepLinkTopics, buildTutorDeepLinkPrompt } from "@/lib/tutorDeepLink";
 
 const easing = [0.25, 0, 0, 1] as const;
 
@@ -379,6 +381,7 @@ export default function Tutor() {
     isSavingNotes,
     isStreaming,
     sessionSaveFailed,
+    setContext,
     setMode,
     newConversation,
     loadSessions,
@@ -395,6 +398,9 @@ export default function Tutor() {
   } = useConversationStore();
 
   const [input, setInput] = useState("");
+  const [deepLinkTopics, setDeepLinkTopics] = useState<string[] | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkAppliedRef = useRef<string | null>(null);
   const [isBooting, setIsBooting] = useState(true);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -414,6 +420,27 @@ export default function Tutor() {
     })();
     return () => { mounted = false; };
   }, [fetchNotesForTutor, loadSessions]);
+
+  // Frontend M15: honour /tutor?topic= / ?topics= deep links. The
+  // store context is what the server sends as `Topic:` in the system
+  // prompt, and the input is prefilled with a sendable draft — but
+  // nothing is auto-sent, so no credit is spent and no key gate is
+  // triggered before the user presses send. The query is cleared
+  // (replace) after applying, so a refresh does not re-prefill an
+  // input the user has since edited or cleared. The textarea is
+  // only prefilled when it is currently empty, so a draft typed
+  // before this effect runs is never overwritten.
+  useEffect(() => {
+    const query = searchParams.toString();
+    if (deepLinkAppliedRef.current === query) return;
+    const topics = parseTutorDeepLinkTopics(searchParams);
+    if (topics.length === 0) return;
+    deepLinkAppliedRef.current = query;
+    setContext(topics.join(", "));
+    setDeepLinkTopics(topics);
+    if (!inputRef.current?.value) setInput(buildTutorDeepLinkPrompt(topics));
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setContext, setSearchParams]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -435,6 +462,7 @@ export default function Tutor() {
   const handleOpenSession = async (sessionId: string) => {
     await loadSessionConversation(sessionId);
     await loadSessionNotes(sessionId);
+    setDeepLinkTopics(null);
     setHistoryDrawerOpen(false);
   };
 
@@ -736,6 +764,23 @@ export default function Tutor() {
                 )}
               </div>
 
+              {deepLinkTopics && (
+                <div className="flex items-center justify-between gap-4 border-b border-[#262626] px-4 sm:px-6 py-3">
+                  <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase truncate">
+                    TOPIC: {deepLinkTopics.join(", ")}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setDeepLinkTopics(null);
+                      setContext("");
+                    }}
+                    className="text-[#737373] hover:text-[#FAFAFA] transition-colors shrink-0"
+                    aria-label="Dismiss topic"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               {/* Messages */}
               <div
                 className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-[#0A0A0A]"
