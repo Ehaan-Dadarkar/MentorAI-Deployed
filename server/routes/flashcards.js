@@ -376,10 +376,13 @@ router.post(
       });
       if (!deck) return res.status(404).json({ error: "Deck not found" });
 
+      const { question, answer, difficulty } = req.body;
       const card = await Flashcard.create({
         deckId: deck._id,
         userId: req.userId,
-        ...req.body,
+        question,
+        answer,
+        difficulty,
       });
 
       res.status(201).json({ card });

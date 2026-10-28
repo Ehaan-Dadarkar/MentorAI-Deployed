@@ -88,9 +88,14 @@ router.post("/", auth, validate(createSchema), async (req, res, next) => {
       });
     }
 
+    const { title, content, subject, tags, sourceType } = req.body;
     const note = await Note.create({
       userId: req.userId,
-      ...req.body,
+      title,
+      content,
+      subject,
+      tags,
+      sourceType,
       isDeleted: false,
       deleted: false,
     });
@@ -139,10 +144,13 @@ async function updateNoteHandler(req, res, next) {
       });
     }
 
+    // req.body is the parsed, allowlisted update (validate middleware
+    // assigns Zod output); $set + runValidators means a $ operator or
+    // a field outside updateSchema can never reach MongoDB (Backend M4).
     const note = await Note.findOneAndUpdate(
       { _id: req.params.id, userId: req.userId },
-      req.body,
-      { new: true },
+      { $set: req.body },
+      { new: true, runValidators: true },
     );
     if (!note) return res.status(404).json({ error: "Note not found" });
     res.json({ note });
