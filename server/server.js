@@ -73,6 +73,7 @@ async function ensureDemoAccount() {
 }
 
 const { corsMiddleware } = require("./middleware/cors");
+const { csrfOriginCheck } = require("./middleware/csrfOrigin");
 
 // Middleware
 app.use(helmet());
@@ -80,6 +81,10 @@ app.use(helmet());
 app.use(globalLimiter);
 app.use(rateLimitInfoMiddleware);
 app.use(corsMiddleware);
+// CSRF origin check (Backend M2): state-changing requests must come
+// from an allowlisted frontend origin. Mounted here, before every
+// route, so no router can forget it; see middleware/csrfOrigin.js.
+app.use(csrfOriginCheck);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
