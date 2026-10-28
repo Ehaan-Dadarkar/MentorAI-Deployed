@@ -43,7 +43,7 @@ const PrimaryButton = ({
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, demoLogin } = useAuthStore();
+  const { login, demoLogin, sessionExpired } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -121,6 +121,11 @@ export default function Login() {
             className="bg-[#0A0A0A] border border-[#262626] p-5 sm:p-8 md:p-12"
           >
             <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+              {sessionExpired && (
+                <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 text-xs font-bold tracking-wider text-[#FF3D00] uppercase">
+                  [ SESSION EXPIRED ] PLEASE LOG IN AGAIN
+                </div>
+              )}
               <AnimatePresence mode="wait">
                 {error && (
                   <motion.div

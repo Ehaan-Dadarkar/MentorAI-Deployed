@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
+import { SESSION_EXPIRED_EVENT } from "@/lib/sessionEvents";
 
 // Single API base for the whole client (Frontend M3): the tutor SSE
 // stream used to duplicate this fallback independently, so the two
@@ -129,8 +130,16 @@ api.interceptors.response.use(
     if (error?.response?.status === 402) {
       useApiKeyModalStore.getState().open(true);
     }
+    // Frontend M7: never full-page-redirect on 401. A reload wipes
+    // every in-memory zustand store (tutor thread, flashcard state,
+    // workspace editor content), so an expired session during editing
+    // destroyed unsaved work. Instead, announce the expiry: App's
+    // listener clears auth state and ProtectedRoute then navigates
+    // to /login through React Router with the JS heap intact. There
+    // is no silent session refresh to attempt: auth is a single JWT
+    // cookie with no refresh endpoint.
     if (error.response?.status === 401) {
-      window.location.href = "/login";
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
     }
     return Promise.reject(error);
   },

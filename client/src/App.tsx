@@ -1,7 +1,8 @@
 import { useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, handleSessionExpired } from "@/store/authStore";
+import { SESSION_EXPIRED_EVENT } from "@/lib/sessionEvents";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
 import { useNexusStore } from "@/store/nexusStore";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -154,6 +155,15 @@ export default function App() {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Frontend M7: a 401 anywhere clears auth state here (never a full-page
+  // reload), so ProtectedRoute SPA-navigates to /login and in-memory
+  // store state survives the session expiry.
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () =>
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
