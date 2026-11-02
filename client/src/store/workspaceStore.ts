@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Note } from "@/types";
+import type { PdfImportResult } from "@/lib/workspaceApi";
 import {
   createNote as createNoteApi,
   fetchNoteById,
@@ -42,7 +43,7 @@ interface WorkspaceState {
 
   createNote: (payload?: Partial<Pick<Note, "title" | "subject" | "content">>) => Promise<Note>;
   saveActiveNote: (payload?: Partial<Pick<Note, "title" | "content" | "subject">>) => Promise<void>;
-  importPdf: (file: File) => Promise<Note>;
+  importPdf: (file: File) => Promise<PdfImportResult>;
 
   deletePermanently: (id: string) => Promise<void>;
 }
@@ -203,7 +204,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   importPdf: async (file) => {
     set({ isImportingPdf: true });
     try {
-      const note = await uploadPdfNote(file);
+      const { note, structuredFrom } = await uploadPdfNote(file);
       set((state) => ({
         notes: [note, ...state.notes.filter((entry) => entry._id !== note._id)],
         activeNote: note,
@@ -212,7 +213,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         isImportingPdf: false,
       }));
 
-      return note;
+      return { note, structuredFrom };
     } catch (error) {
       set({ isImportingPdf: false });
       throw error;

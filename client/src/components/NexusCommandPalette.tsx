@@ -11,8 +11,8 @@ import {
   FolderOpen,
   Search,
   FileText,
-  Sparkles,
-  Play,
+  Coins,
+  Settings,
   Clock,
   ArrowRight,
   X,
@@ -127,8 +127,29 @@ export function NexusCommandPalette() {
         category: "Navigate",
         action: () => go("/knowledge-graph", "Knowledge Graph"),
       },
+      {
+        id: "nav:/credits",
+        icon: Coins,
+        label: "Go to Credits",
+        category: "Navigate",
+        action: () => go("/credits", "Credits"),
+      },
+      {
+        id: "nav:/settings",
+        icon: Settings,
+        label: "Go to Settings",
+        category: "Navigate",
+        action: () => go("/settings", "Settings"),
+      },
     ];
 
+    // H10: only actions whose target behaviour actually works stay
+    // here. "New Note" is honoured by /workspace?new=true (Workspace
+    // reads the param). The ?new=true/?generate=true flashcard
+    // actions and the ?start=true quiz action were dead (their pages
+    // read no query params and are owned by another slice), and a
+    // ?start=true voice-recall auto-start would spend a credit and
+    // fire the API-key gate without user consent, so they are gone.
     const actionCommands: Command[] = [
       {
         id: "act:new-note",
@@ -138,50 +159,16 @@ export function NexusCommandPalette() {
         action: () =>
           doAction("act:new-note", "New Note", "/workspace?new=true"),
       },
-      {
-        id: "act:new-deck",
-        icon: Layers,
-        label: "New Deck",
-        category: "Actions",
-        action: () =>
-          doAction("act:new-deck", "New Deck", "/flashcards?new=true"),
-      },
-      {
-        id: "act:start-quiz",
-        icon: Play,
-        label: "Start Quiz",
-        category: "Actions",
-        action: () =>
-          doAction("act:start-quiz", "Start Quiz", "/quiz?start=true"),
-      },
-      {
-        id: "act:voice-session",
-        icon: Mic,
-        label: "Start Voice Recall Session",
-        category: "Actions",
-        action: () =>
-          doAction(
-            "act:voice-session",
-            "Voice Recall Session",
-            "/voice-recall?start=true",
-          ),
-      },
-      {
-        id: "act:gen-flashcards",
-        icon: Sparkles,
-        label: "Generate Flashcards",
-        category: "Actions",
-        action: () =>
-          doAction(
-            "act:gen-flashcards",
-            "Generate Flashcards",
-            "/flashcards?generate=true",
-          ),
-      },
     ];
 
-    // Recent items from store
-    const recentCommands: Command[] = recentItems.map((r) => {
+    // Recent items from store - recents whose command no longer
+    // exists (e.g. dropped dead actions) are filtered out instead
+    // of rendering as no-op entries.
+    const recentCommands: Command[] = recentItems
+      .filter((r) =>
+        [...navCommands, ...actionCommands].some((c) => c.id === r.id),
+      )
+      .map((r) => {
       const iconMap: Record<string, LucideIcon> = {
         "nav:/": LayoutDashboard,
         "nav:/tutor": Bot,
@@ -190,11 +177,9 @@ export function NexusCommandPalette() {
         "nav:/voice-recall": Mic,
         "nav:/workspace": FolderOpen,
         "nav:/knowledge-graph": Network,
+        "nav:/credits": Coins,
+        "nav:/settings": Settings,
         "act:new-note": FileText,
-        "act:new-deck": Layers,
-        "act:start-quiz": Play,
-        "act:voice-session": Mic,
-        "act:gen-flashcards": Sparkles,
       };
 
       return {
@@ -300,9 +285,9 @@ export function NexusCommandPalette() {
       case "Actions":
         return "border-[#FAFAFA] text-[#FAFAFA] bg-[#FAFAFA]/5";
       case "Recent":
-        return "border-[#737373] text-[#737373] bg-[#737373]/5";
+        return "border-[#8a8a8a] text-[#8a8a8a] bg-[#8a8a8a]/5";
       default:
-        return "border-[#262626] text-[#737373]";
+        return "border-[#262626] text-[#8a8a8a]";
     }
   };
 
@@ -352,7 +337,7 @@ export function NexusCommandPalette() {
               </div>
               <button
                 onClick={closeNexus}
-                className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -375,10 +360,10 @@ export function NexusCommandPalette() {
             <div ref={listRef} className="relative z-10 max-h-[400px] overflow-y-auto py-4">
               {flatList.length === 0 ? (
                 <div className="px-6 py-12 text-center">
-                  <p className="text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <p className="text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     NO MATCHES FOUND
                   </p>
-                  <p className="text-xs text-[#737373] mt-2">
+                  <p className="text-xs text-[#8a8a8a] mt-2">
                     "{query}"
                   </p>
                 </div>
@@ -393,7 +378,7 @@ export function NexusCommandPalette() {
                   return (
                     <div key={group.category} className="mb-6 last:mb-0">
                       <div className="px-6 mb-3">
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                        <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                           [ {group.category} ]
                         </span>
                       </div>
@@ -422,7 +407,7 @@ export function NexusCommandPalette() {
                               </span>
                               <span
                                 className={cn(
-                                  "text-[10px] font-bold px-2 py-1 border uppercase tracking-widest",
+                                  "text-label font-bold px-2 py-1 border uppercase tracking-widest",
                                   isSelected 
                                     ? "border-[#0A0A0A] text-[#0A0A0A] bg-[#0A0A0A]/5"
                                     : categoryColor(cmd.category),
@@ -446,22 +431,22 @@ export function NexusCommandPalette() {
             {/* Footer hints */}
             <div className="relative z-10 flex items-center gap-6 px-6 py-3 border-t border-[#262626] bg-[#0A0A0A]">
               <div className="flex items-center gap-2">
-                <kbd className="text-[10px] font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#737373] uppercase">
+                <kbd className="text-label font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#8a8a8a] uppercase">
                   ↑↓
                 </kbd>
-                <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">Navigate</span>
+                <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">Navigate</span>
               </div>
               <div className="flex items-center gap-2">
-                <kbd className="text-[10px] font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#737373] uppercase">
+                <kbd className="text-label font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#8a8a8a] uppercase">
                   ↵
                 </kbd>
-                <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">Select</span>
+                <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">Select</span>
               </div>
               <div className="flex items-center gap-2">
-                <kbd className="text-[10px] font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#737373] uppercase">
+                <kbd className="text-label font-bold tracking-widest border border-[#262626] px-2 py-1 text-[#8a8a8a] uppercase">
                   ESC
                 </kbd>
-                <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">Close</span>
+                <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">Close</span>
               </div>
             </div>
           </motion.div>

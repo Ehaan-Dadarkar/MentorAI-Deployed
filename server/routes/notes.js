@@ -8,6 +8,13 @@ const { requireOpenRouterAccess, refundCreditSpend } = require("../services/open
 const { usageCallbackFor } = require("../services/usage");
 const Note = require("../models/Note");
 
+// M7: cap note content interpolated into AI prompts. Mirrors the
+// truncateAiInput helper in server/services/ai.js (AI_INPUT_MAX_CHARS =
+// 12000), kept local so this route does not depend on ai.js internals.
+const TRANSLATE_INPUT_MAX_CHARS = 12000;
+const truncateAiInput = (text) =>
+  typeof text === "string" ? text.slice(0, TRANSLATE_INPUT_MAX_CHARS) : text;
+
 const router = express.Router();
 
 function buildDeletedQuery(deletedValue) {
@@ -320,7 +327,7 @@ Return only the translated text without extra commentary.`,
           },
           {
             role: "user",
-            content: note.content,
+            content: truncateAiInput(note.content),
           },
         ],
         { temperature: 0.2, apiKey: access.apiKey, onUsage: usageCallbackFor(req.userId, "notes-translate") },

@@ -108,7 +108,7 @@ const GhostButton = ({
   <button
     onClick={onClick}
     className={cn(
-      "group relative inline-flex items-center gap-2 text-[#737373] hover:text-[#FAFAFA] uppercase tracking-[0.1em] font-semibold py-2 transition-colors duration-150 rounded-none",
+      "group relative inline-flex items-center gap-2 text-[#8a8a8a] hover:text-[#FAFAFA] uppercase tracking-[0.1em] font-semibold py-2 transition-colors duration-150 rounded-none",
       className,
     )}
   >
@@ -139,6 +139,21 @@ function SectionSkeleton({ height = "h-48" }: { height?: string }) {
     <div
       className={`w-full ${height} bg-[#1A1A1A] animate-pulse rounded-none`}
     />
+  );
+}
+
+// M11: honest inline error when a section's data fails to load, so a
+// failed request shows an explanation instead of a silently blank section.
+function SectionError({ message }: { message: string }) {
+  return (
+    <div className="border border-[#262626] p-8 text-center">
+      <p className="text-xs font-mono tracking-[0.1em] uppercase text-[#737373]">
+        {message}
+      </p>
+      <p className="mt-2 text-[10px] font-mono tracking-[0.1em] uppercase text-[#4d4d4d]">
+        Refresh the page to retry
+      </p>
+    </div>
   );
 }
 
@@ -179,28 +194,35 @@ export default function Dashboard() {
   const [focusLoading, setFocusLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(true);
 
+  // M11: per-section load failures. A failed section renders
+  // SectionError instead of silently blank content.
+  const [loadErrors, setLoadErrors] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     const load = async (
       url: string,
       key: string,
       setSt: (v: any) => void,
       setLoad: (v: boolean) => void,
+      errKey: string,
     ) => {
       try {
         const { data } = await api.get(url);
         setSt(data[key]);
       } catch {
-        // Fall back gracefully
+        // M11: record the failure so the section can explain itself
+        // instead of failing silently.
+        setLoadErrors((prev) => ({ ...prev, [errKey]: true }));
       } finally {
         setLoad(false);
       }
     };
 
-    load("/dashboard/stats", "stats", setStats, setStatsLoading);
-    load("/dashboard/chart", "chart", setChart, setChartLoading);
-    load("/dashboard/weak-topics", "weakTopics", setWeakTopics, setWeakLoading);
-    load("/dashboard/focus-topics", "focusTopics", setFocusTopics, setFocusLoading);
-    load("/dashboard/activity", "activity", setActivity, setActivityLoading);
+    load("/dashboard/stats", "stats", setStats, setStatsLoading, "stats");
+    load("/dashboard/chart", "chart", setChart, setChartLoading, "chart");
+    load("/dashboard/weak-topics", "weakTopics", setWeakTopics, setWeakLoading, "weakTopics");
+    load("/dashboard/focus-topics", "focusTopics", setFocusTopics, setFocusLoading, "focusTopics");
+    load("/dashboard/activity", "activity", setActivity, setActivityLoading, "activity");
   }, []);
 
   const greeting = getGreeting();
@@ -242,9 +264,9 @@ export default function Dashboard() {
         >
           {/* ── HERO ── */}
           <motion.div variants={itemVariants} className="max-w-4xl">
-            <h1 className="font-['Inter_Tight'] text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] tracking-[-0.06em] font-medium leading-[0.85] mb-6 sm:mb-10 md:mb-12 uppercase text-[#FAFAFA] mix-blend-difference">
+            <h1 className="font-display text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] tracking-[-0.06em] font-medium leading-[0.85] mb-6 sm:mb-10 md:mb-12 uppercase text-[#FAFAFA] mix-blend-difference">
               {greeting},<br />
-              <span className="text-[#737373]">{firstName}.</span>
+              <span className="text-[#8a8a8a]">{firstName}.</span>
             </h1>
           </motion.div>
 
@@ -255,49 +277,51 @@ export default function Dashboard() {
           >
             {statsLoading ? (
               <SectionSkeleton height="h-32" />
+            ) : loadErrors.stats ? (
+              <SectionError message="Couldn't load study stats" />
             ) : stats ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#262626]">
                 {/* Streak */}
                 <div className="py-6 sm:py-8 lg:py-12 lg:pr-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
+                  <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Study Streak
                   </p>
-                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-display text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.streak} />
-                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal ml-1">
+                    <span className="text-xl sm:text-2xl text-[#8a8a8a] tracking-normal ml-1">
                       D
                     </span>
                   </p>
                 </div>
                 {/* Accuracy */}
                 <div className="py-6 sm:py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
+                  <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Accuracy
                   </p>
-                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none text-[#FF3D00]">
+                  <p className="font-display text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none text-[#FF3D00]">
                     <AnimatedNumber value={stats.avgQuizScore} />
-                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal">
+                    <span className="text-xl sm:text-2xl text-[#8a8a8a] tracking-normal">
                       %
                     </span>
                   </p>
                 </div>
                 {/* Mastered */}
                 <div className="py-6 sm:py-8 lg:py-12 lg:px-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
+                  <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Mastered
                   </p>
-                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-display text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.cardsMastered} />
                   </p>
                 </div>
                 {/* Time */}
                 <div className="py-6 sm:py-8 lg:py-12 lg:pl-8 flex flex-col justify-between">
-                  <p className="text-[#737373] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
+                  <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.2em] uppercase mb-3 lg:mb-12">
                     Time Invested
                   </p>
-                  <p className="font-['Inter_Tight'] text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
+                  <p className="font-display text-4xl sm:text-5xl md:text-7xl tracking-tighter leading-none">
                     <AnimatedNumber value={stats.totalStudyMinutes} />
-                    <span className="text-xl sm:text-2xl text-[#737373] tracking-normal ml-1">
+                    <span className="text-xl sm:text-2xl text-[#8a8a8a] tracking-normal ml-1">
                       M
                     </span>
                   </p>
@@ -314,10 +338,10 @@ export default function Dashboard() {
             {/* Chart */}
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
               <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase">
+                <h2 className="font-display text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase">
                   Volume
                 </h2>
-                <p className="text-[#737373] text-xs font-mono tracking-[0.1em]">
+                <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.1em]">
                   LAST 7 DAYS
                 </p>
               </div>
@@ -325,27 +349,29 @@ export default function Dashboard() {
               <div className="h-[240px] sm:h-[280px] md:h-[300px] lg:flex-1 lg:min-h-[300px] w-full">
                 {chartLoading ? (
                   <SectionSkeleton height="h-full" />
+                ) : loadErrors.chart ? (
+                  <SectionError message="Couldn't load the activity chart" />
                 ) : chart && chart.some((p) => p.minutes > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chart}>
                       <XAxis
                         dataKey="day"
-                        stroke="#737373"
-                        fontSize={11}
+                        stroke="#8a8a8a"
+                        fontSize={12}
                         tickLine={false}
                         axisLine={false}
                         dy={16}
-                        fontFamily="'JetBrains Mono', monospace"
+                        fontFamily="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
                         className="uppercase tracking-wider"
                       />
                       <YAxis
-                        stroke="#737373"
-                        fontSize={11}
+                        stroke="#8a8a8a"
+                        fontSize={12}
                         tickLine={false}
                         axisLine={false}
                         width={36}
                         dx={-8}
-                        fontFamily="'JetBrains Mono', monospace"
+                        fontFamily="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
                       />
                       <Tooltip
                         contentStyle={{
@@ -356,7 +382,7 @@ export default function Dashboard() {
                           color: "#FAFAFA",
                           textTransform: "uppercase",
                           letterSpacing: "0.1em",
-                          fontFamily: "'JetBrains Mono', monospace",
+                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
                         }}
                         itemStyle={{ color: "#FF3D00" }}
                         formatter={(value) => [`${value} MIN`, "VOLUME"]}
@@ -382,7 +408,7 @@ export default function Dashboard() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center border border-[#262626] p-8 text-center text-[#737373]">
+                  <div className="h-full flex flex-col items-center justify-center border border-[#262626] p-8 text-center text-[#8a8a8a]">
                     <span className="mb-4 text-xs font-mono tracking-[0.1em] uppercase">
                       No Activity Recorded
                     </span>
@@ -397,16 +423,18 @@ export default function Dashboard() {
             {/* Knowledge Gaps */}
             <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
               <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase text-[#FF3D00]">
+                <h2 className="font-display text-2xl sm:text-4xl md:text-5xl tracking-[-0.04em] leading-none uppercase text-[#FF3D00]">
                   Gaps
                 </h2>
-                <p className="text-[#737373] text-xs font-mono tracking-[0.1em] uppercase">
+                <p className="text-[#8a8a8a] text-xs font-mono tracking-[0.1em] uppercase">
                   Needs Review
                 </p>
               </div>
               <div className="space-y-0 flex-1">
                 {weakLoading ? (
                   <SectionSkeleton height="h-48" />
+                ) : loadErrors.weakTopics ? (
+                  <SectionError message="Couldn't load knowledge gaps" />
                 ) : weakTopics && weakTopics.length > 0 ? (
                   weakTopics.slice(0, 5).map((wt, i) => (
                     <div
@@ -414,7 +442,7 @@ export default function Dashboard() {
                       className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 sm:py-5 border-b border-[#262626] last:border-none transition-colors hover:bg-[#1A1A1A] px-2 -mx-2"
                     >
                       <div className="min-w-0">
-                        <p className="font-['Inter_Tight'] text-lg sm:text-xl md:text-2xl tracking-[-0.04em] leading-snug truncate mb-1">
+                        <p className="font-display text-lg sm:text-xl md:text-2xl tracking-[-0.04em] leading-snug truncate mb-1">
                           {wt.topic}
                         </p>
                         <p className="text-xs font-mono uppercase text-[#FF3D00] tracking-wider">
@@ -432,7 +460,7 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-12 text-[#737373] border-b border-[#262626]">
+                  <div className="py-12 text-[#8a8a8a] border-b border-[#262626]">
                     <span className="text-xs font-mono tracking-widest uppercase">
                       No weak areas identified
                     </span>
@@ -450,10 +478,10 @@ export default function Dashboard() {
             {/* Recent Activity */}
             <div className="lg:col-span-5 xl:col-span-4">
               <div className="border-b border-[#262626] pb-4 sm:pb-6 mb-6 sm:mb-8 flex justify-between items-end">
-                <h2 className="font-['Inter_Tight'] text-2xl sm:text-3xl md:text-4xl tracking-[-0.04em] leading-none uppercase">
+                <h2 className="font-display text-2xl sm:text-3xl md:text-4xl tracking-[-0.04em] leading-none uppercase">
                   Activity
                 </h2>
-                <p className="text-[#737373] text-xs font-mono tracking-widest uppercase">
+                <p className="text-[#8a8a8a] text-xs font-mono tracking-widest uppercase">
                   Timeline
                 </p>
               </div>
@@ -461,27 +489,29 @@ export default function Dashboard() {
               <div className="space-y-4 sm:space-y-6">
                 {activityLoading ? (
                   <SectionSkeleton height="h-64" />
+                ) : loadErrors.activity ? (
+                  <SectionError message="Couldn't load recent activity" />
                 ) : activity && activity.length > 0 ? (
                   activity.slice(0, 5).map((act, i) => (
                     <div
                       key={act.id || i}
                       className="flex gap-3 sm:gap-4 group items-start"
                     >
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 mt-1 shrink-0 bg-[#1A1A1A] text-[#737373] group-hover:text-[#FF3D00] group-hover:bg-[#FF3D00]/10 flex items-center justify-center transition-colors">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 mt-1 shrink-0 bg-[#1A1A1A] text-[#8a8a8a] group-hover:text-[#FF3D00] group-hover:bg-[#FF3D00]/10 flex items-center justify-center transition-colors">
                         <ActivityIcon type={act.type} />
                       </div>
                       <div className="flex-1 min-w-0 border-b border-[#262626] pb-4 sm:pb-6">
-                        <p className="text-base sm:text-lg md:text-xl font-['Inter_Tight'] tracking-tight mb-1 sm:mb-2 text-[#FAFAFA]">
+                        <p className="text-base sm:text-lg md:text-xl font-display tracking-tight mb-1 sm:mb-2 text-[#FAFAFA]">
                           {act.description}
                         </p>
-                        <p className="text-xs font-mono text-[#737373] uppercase tracking-[0.1em]">
+                        <p className="text-xs font-mono text-[#8a8a8a] uppercase tracking-[0.1em]">
                           {act.subject} • {relativeTime(act.date)}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="py-12 text-[#737373] border-b border-[#262626]">
+                  <div className="py-12 text-[#8a8a8a] border-b border-[#262626]">
                     <span className="text-xs font-mono tracking-widest uppercase">
                       No recent activity
                     </span>
@@ -504,7 +534,7 @@ export default function Dashboard() {
                     onClick={() => navigate(action.dest)}
                     className="group flex items-center justify-between py-4 sm:py-6 md:py-8 border-b border-[#262626] text-left w-full border-t first:border-t-[#262626]"
                   >
-                    <span className="font-['Inter_Tight'] text-3xl sm:text-4xl md:text-6xl lg:text-7xl tracking-[-0.06em] text-[#737373] group-hover:text-[#FF3D00] transition-colors duration-200 uppercase">
+                    <span className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl tracking-[-0.06em] text-[#8a8a8a] group-hover:text-[#FF3D00] transition-colors duration-200 uppercase">
                       {action.title}
                     </span>
                     <ArrowRight

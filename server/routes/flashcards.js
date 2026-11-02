@@ -790,7 +790,7 @@ router.get("/stats", auth, async (req, res, next) => {
         },
         { $sort: { _id: 1 } },
       ]),
-      Flashcard.countDocuments({ userId, mastery: { $gt: 80 } }),
+      Flashcard.countDocuments({ userId, mastery: { $gte: 80 } }),
       Deck.countDocuments({ userId }),
       StudyLog.aggregate([
         { $match: { userId: new mongoose.Types.ObjectId(userId) } },

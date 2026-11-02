@@ -6,7 +6,8 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Plus, Upload, Trash2, Search } from "lucide-react";
+import { ArrowRight, ArrowLeft, Plus, Upload, Trash2, Search, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 
@@ -72,7 +73,7 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase",
+      "text-label font-bold tracking-widest text-[#8a8a8a] uppercase",
       "hover:text-[#FAFAFA] transition-colors",
       className
     )}
@@ -100,7 +101,7 @@ const SecondaryButton = ({
       "group relative inline-flex items-center justify-center gap-2",
       // ↓ responsive padding
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none",
@@ -124,6 +125,9 @@ export default function Workspace() {
 
   const [titleDraft, setTitleDraft] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  // M4: disclosure shown after a PDF import whose structure was
+  // built from only the first N characters of the PDF text.
+  const [pdfTruncationNotice, setPdfTruncationNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isApplyingEditorContentRef = useRef(false);
   const dirtyDebounceTimerRef = useRef<number | null>(null);
@@ -185,7 +189,7 @@ export default function Workspace() {
     editorProps: {
       attributes: {
         class:
-          "prose prose-invert max-w-none focus:outline-none min-h-[50vh] sm:min-h-[60vh] text-base leading-relaxed tracking-normal font-['Inter_Tight','Inter',sans-serif]",
+          "prose prose-invert max-w-none focus:outline-none min-h-[50vh] sm:min-h-[60vh] text-base leading-relaxed tracking-normal font-display",
       },
     },
     onBlur: () => { void saveDirtyEdits(); },
@@ -308,6 +312,20 @@ export default function Workspace() {
     } catch (e) { console.error(e); }
   };
 
+  // H10: honour /workspace?new=true deep links (Nexus "New Note"
+  // command). Follows the Tutor ?topic= deep-link pattern: apply once,
+  // then clear the query (replace) so a refresh does not create a
+  // second note. handleCreateNote already guards demo users.
+  const deepLinkNewAppliedRef = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (deepLinkNewAppliedRef.current) return;
+    if (searchParams.get("new") !== "true") return;
+    deepLinkNewAppliedRef.current = true;
+    setSearchParams({}, { replace: true });
+    void handleCreateNote();
+  }, [searchParams, setSearchParams, handleCreateNote]);
+
   const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -315,14 +333,24 @@ export default function Workspace() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    if (guardOpenRouterAction()) {
+    if (await guardOpenRouterAction()) {
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     await saveDirtyEdits();
     try {
-      await importPdf(file);
+      const result = await importPdf(file);
       setIsDirty(false);
+      // M4: the AI structures only the first N chars of the PDF -
+      // say so honestly instead of silently truncating.
+      if (result.structuredFrom?.truncated) {
+        const { charLimit, totalChars } = result.structuredFrom;
+        setPdfTruncationNotice(
+          `STRUCTURED FROM THE FIRST ${charLimit.toLocaleString("en-US")} OF ${totalChars.toLocaleString("en-US")} CHARACTERS OF THIS PDF.`,
+        );
+      } else {
+        setPdfTruncationNotice(null);
+      }
     } catch (err) { console.error(err); }
     finally { if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
@@ -350,6 +378,11 @@ export default function Workspace() {
       useWorkspaceStore.setState({ activeNote: null });
     } catch (e) { console.error(e); }
   };
+
+  // M4: the truncation notice belongs to the import that produced it -
+  // clear it when switching notes or closing the editor.
+  const activeNoteId = activeNote?._id;
+  useEffect(() => { setPdfTruncationNotice(null); }, [activeNoteId]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
@@ -410,7 +443,7 @@ export default function Workspace() {
                     </motion.h1>
                     <motion.div variants={fadeUp} className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                       <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                      <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                      <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                         {/* ↓ shorter subtitle on mobile */}
                         <span className="hidden sm:inline">NOTES, IMPORTED PDFS, AND RAW THOUGHT.</span>
                         <span className="sm:hidden">NOTES & PDFS.</span>
@@ -467,7 +500,7 @@ export default function Workspace() {
                     ARCHIVES
                   </h2>
                   <div className="h-px flex-1 bg-[#262626]" />
-                  <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     {notes.length.toString().padStart(2, "0")}
                     <span className="hidden sm:inline"> ITEMS</span>
                   </span>
@@ -477,7 +510,7 @@ export default function Workspace() {
                     filtered server-side; this wires it to the UI. */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-[#8a8a8a] absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       value={searchDraft}
                       onChange={(e) => setSearchDraft(e.target.value)}
@@ -491,10 +524,10 @@ export default function Workspace() {
                     type="button"
                     onClick={() => handleSelectSubject(null)}
                     className={cn(
-                      "text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
+                      "text-label font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
                       !filters.subject
                         ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                        : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                        : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
                     )}
                   >
                     All
@@ -505,10 +538,10 @@ export default function Workspace() {
                       type="button"
                       onClick={() => handleSelectSubject(subject)}
                       className={cn(
-                        "text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
+                        "text-label font-bold tracking-widest uppercase px-3 py-1.5 border transition-all duration-150",
                         filters.subject === subject
                           ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                          : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                          : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
                       )}
                     >
                       {subject}
@@ -518,7 +551,7 @@ export default function Workspace() {
 
                 {isLoading && notes.length === 0 ? (
                   <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
-                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       LOADING...
                     </p>
                   </div>
@@ -527,7 +560,7 @@ export default function Workspace() {
                     <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
                       {filters.search || filters.subject ? "NO MATCHES." : "VOID."}
                     </h3>
-                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8 max-w-sm">
+                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8 max-w-sm">
                       {filters.search || filters.subject
                         ? "NO NOTES MATCH YOUR SEARCH OR FILTER. CLEAR THEM TO SEE EVERYTHING."
                         : "YOUR WORKSPACE IS EMPTY. CREATE A NOTE OR IMPORT A PDF TO BEGIN."}
@@ -562,7 +595,7 @@ export default function Workspace() {
 
                         <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
                           <div className="flex-1">
-                            <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3 sm:mb-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <p className="text-label font-bold tracking-[0.2em] uppercase mb-3 sm:mb-4 opacity-50 group-hover:opacity-100 transition-opacity">
                               {formatDate(note.createdAt)}
                             </p>
                             {/* ↓ title scales from text-xl */}
@@ -571,7 +604,7 @@ export default function Workspace() {
                             </h3>
                           </div>
                           <div className="flex items-center justify-between mt-6 sm:mt-8">
-                            <span className="text-[10px] font-bold tracking-[0.2em] uppercase border border-current px-2 sm:px-3 py-1 opacity-50 group-hover:opacity-100">
+                            <span className="text-label font-bold tracking-[0.2em] uppercase border border-current px-2 sm:px-3 py-1 opacity-50 group-hover:opacity-100">
                               {note.subject || "GENERAL"}
                             </span>
                             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500" />
@@ -591,7 +624,7 @@ export default function Workspace() {
                     TRASH
                   </h2>
                   <div className="h-px flex-1 bg-[#262626]" />
-                  <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     {trashNotes.length.toString().padStart(2, "0")}
                     <span className="hidden sm:inline"> ITEMS</span>
                   </span>
@@ -599,7 +632,7 @@ export default function Workspace() {
 
                 {trashNotes.length === 0 ? (
                   <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
-                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       TRASH IS EMPTY.
                     </p>
                   </div>
@@ -610,7 +643,7 @@ export default function Workspace() {
                         key={note._id}
                         className="border-b border-r border-[#262626] p-5 sm:p-8 flex flex-col"
                       >
-                        <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3 sm:mb-4 opacity-50">
+                        <p className="text-label font-bold tracking-[0.2em] uppercase mb-3 sm:mb-4 opacity-50">
                           {formatDate(note.createdAt)}
                         </p>
                         <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 line-clamp-3">
@@ -620,15 +653,15 @@ export default function Workspace() {
                           <button
                             type="button"
                             onClick={() => handleRestoreNote(note._id)}
-                            className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase hover:text-[#FF3D00] transition-colors"
+                            className="text-label font-bold tracking-widest text-[#FAFAFA] uppercase hover:text-[#FF3D00] transition-colors"
                           >
                             RESTORE
                           </button>
-                          <span className="text-[10px] text-[#262626]">|</span>
+                          <span className="text-label text-[#262626]">|</span>
                           <button
                             type="button"
                             onClick={() => handleDeletePermanently(note._id)}
-                            className="text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FF3D00] transition-colors"
+                            className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FF3D00] transition-colors"
                           >
                             DELETE PERMANENTLY
                           </button>
@@ -673,7 +706,7 @@ export default function Workspace() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase animate-pulse"
+                        className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase animate-pulse"
                       >
                         SAVING...
                       </motion.span>
@@ -702,7 +735,7 @@ export default function Workspace() {
                             }
                           }}
                           disabled={isSaving}
-                          className="py-2 px-4 text-[10px]"
+                          className="py-2 px-4 text-label"
                         >
                           SAVE
                           <ArrowRight className="w-3 h-3 ml-1" />
@@ -732,9 +765,25 @@ export default function Workspace() {
               {isDemoNote && (
                 <div className="flex items-center gap-3 border border-[#FF3D00]/30 bg-[#FF3D00]/5 px-4 py-3 mb-6">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0" />
-                  <p className="text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                  <p className="text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
                     DEMO NOTE — READ ONLY. REGISTER A FREE ACCOUNT TO CREATE AND EDIT YOUR OWN NOTES.
                   </p>
+                </div>
+              )}
+
+              {pdfTruncationNotice && (
+                <div className="flex items-center gap-3 border border-[#262626] bg-[#1A1A1A] px-4 py-3 mb-6">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0" />
+                  <p className="flex-1 text-label font-bold tracking-[0.16em] text-[#8a8a8a] uppercase">
+                    {pdfTruncationNotice}
+                  </p>
+                  <button
+                    onClick={() => setPdfTruncationNotice(null)}
+                    className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               )}
 
@@ -755,12 +804,12 @@ export default function Workspace() {
                 />
                 <div className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                   <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                  <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase border border-[#262626] px-2 sm:px-3 py-1">
+                  <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase border border-[#262626] px-2 sm:px-3 py-1">
                     {activeNote.subject || "GENERAL"}
                   </p>
                   {/* ↓ show formatted date on sm+ as extra context */}
                   {activeNote.createdAt && (
-                    <p className="hidden sm:block text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <p className="hidden sm:block text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       {formatDate(activeNote.createdAt)}
                     </p>
                   )}
@@ -769,7 +818,7 @@ export default function Workspace() {
 
               {/* ── EDITOR BODY ── */}
               {/* ↓ slightly reduced top padding on mobile */}
-              <div className="pt-6 sm:pt-8 text-base sm:text-lg font-['Inter_Tight','Inter',sans-serif] prose-p:text-[#FAFAFA] prose-headings:text-[#FAFAFA]">
+              <div className="pt-6 sm:pt-8 text-base sm:text-lg font-display prose-p:text-[#FAFAFA] prose-headings:text-[#FAFAFA]">
                 <EditorContent editor={editor} />
               </div>
             </motion.div>

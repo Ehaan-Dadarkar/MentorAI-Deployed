@@ -23,6 +23,13 @@ const PDF_MAX_PAGES = 200;
 const SCANNED_PDF_MESSAGE =
   "This PDF has no extractable text - it may be a scanned or image-only PDF.";
 
+// M4: honest disclosure of how much PDF text the AI structuring step sees.
+// The AI path structures only the first PDF_STRUCTURE_AI_CHAR_LIMIT chars;
+// the fallback (no usable sections from the AI) structures the first
+// PDF_STRUCTURE_FALLBACK_CHAR_LIMIT chars of the raw extracted text.
+const PDF_STRUCTURE_AI_CHAR_LIMIT = 3000;
+const PDF_STRUCTURE_FALLBACK_CHAR_LIMIT = 12_000;
+
 function validateParsedPdf(parsed) {
   if (!parsed) return "Failed to parse PDF file";
   if (typeof parsed.numPages === "number" && parsed.numPages > PDF_MAX_PAGES) {
@@ -148,13 +155,17 @@ function normalizeStructuredPayload(rawPayload, fallbackTitle, rawText) {
     }))
     .filter((section) => section.heading || section.content);
 
+  // M4: remember which input limit produced the structure, so the
+  // response can disclose it honestly.
+  let structuredCharLimit = PDF_STRUCTURE_AI_CHAR_LIMIT;
   if (sections.length === 0) {
     sections = [
       {
         heading: "Imported Content",
-        content: cleanText(rawText).slice(0, 12_000),
+        content: cleanText(rawText).slice(0, PDF_STRUCTURE_FALLBACK_CHAR_LIMIT),
       },
     ];
+    structuredCharLimit = PDF_STRUCTURE_FALLBACK_CHAR_LIMIT;
   }
 
   const seenTerms = new Set();
@@ -178,6 +189,7 @@ function normalizeStructuredPayload(rawPayload, fallbackTitle, rawText) {
     sections,
     keyTerms,
     suggestedSubject,
+    structuredCharLimit,
   };
 }
 
@@ -285,7 +297,7 @@ router.post("/pdf", auth, dynamicAiLimiter, uploadPdfMiddleware, async (req, res
 
     // Limit the text sent to AI to reduce processing time.
     // The full extracted text stays available in this request for downstream use.
-    const textForAI = text.substring(0, 3000);
+    const textForAI = text.substring(0, PDF_STRUCTURE_AI_CHAR_LIMIT);
 
     const promptMessages = [
       {
@@ -353,9 +365,17 @@ Return only valid JSON.`,
       tags: ["imported", "pdf", ...termTags],
     });
 
+    // M4: disclose how much of the PDF the structure was built from.
+    const structuredCharLimit =
+      normalized.structuredCharLimit ?? PDF_STRUCTURE_AI_CHAR_LIMIT;
     res.status(201).json({
       note,
       numPages,
+      structuredFrom: {
+        charLimit: structuredCharLimit,
+        totalChars: text.length,
+        truncated: text.length > structuredCharLimit,
+      },
     });
   } catch (error) {
     await refundCreditSpend(req);

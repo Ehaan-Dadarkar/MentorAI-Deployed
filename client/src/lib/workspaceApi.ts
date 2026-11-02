@@ -57,14 +57,25 @@ export async function permanentlyDeleteNote(noteId: string) {
   await api.delete(`/notes/${noteId}/permanent`);
 }
 
-export async function uploadPdfNote(file: File) {
+export interface PdfStructuredFrom {
+  charLimit: number;
+  totalChars: number;
+  truncated: boolean;
+}
+
+export interface PdfImportResult {
+  note: Note;
+  structuredFrom?: PdfStructuredFrom;
+}
+
+export async function uploadPdfNote(file: File): Promise<PdfImportResult> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data } = await api.post<{ note: Note }>("/upload/pdf", formData, {
+  const { data } = await api.post<PdfImportResult>("/upload/pdf", formData, {
     headers: { "Content-Type": "multipart/form-data" },
     timeout: 180000, // 3 minutes - allow time for AI processing
   });
 
-  return data.note;
+  return data;
 }
