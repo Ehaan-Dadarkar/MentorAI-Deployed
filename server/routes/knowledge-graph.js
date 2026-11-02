@@ -562,7 +562,7 @@ function truncateGraph(nodes, edges) {
   };
 }
 
-async function buildNoteCentricGraph({ notes, quizzes, voiceSessions, deckStatsMap, useAi }) {
+async function buildNoteCentricGraph({ notes, quizzes, voiceSessions, deckStatsMap, useAi, req, res }) {
   const quizzesBySubject = new Map();
   const decksBySubject = new Map();
   const voicesByNote = new Map();
@@ -888,6 +888,8 @@ router.get("/", auth, dynamicAiLimiter, async (req, res, next) => {
       voiceSessions,
       deckStatsMap,
       useAi,
+      req,
+      res,
     });
 
     const typeCounts = graph.nodes.reduce(
