@@ -868,7 +868,7 @@ function FeedbackScreen() {
           </h2>
         </motion.div>
         <motion.div variants={fadeUp} className="shrink-0 flex items-center justify-center sm:justify-end">
-          <ScoreRing score={score} size={110} />
+          {score !== null && <ScoreRing score={score} size={110} />}
         </motion.div>
       </div>
 
