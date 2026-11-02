@@ -47,6 +47,7 @@ interface QuizState {
   deleteQuizDeck: (id: string) => Promise<void>;
   setAnswer: (questionIndex: number, optionIndex: number) => void;
   resetSession: () => void;
+  reset: () => void;
   submitQuiz: (timeTaken: number) => Promise<QuizResults>;
 }
 
@@ -207,6 +208,18 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       set({ isSubmitting: false });
       throw error;
     }
+  },
+  reset: () => {
+    // Auth transition: drop ALL user data.
+    set({
+      history: [],
+      currentQuiz: null,
+      answers: [],
+      results: null,
+      isLoading: false,
+      isGenerating: false,
+      isSubmitting: false,
+    });
   },
 }));
 

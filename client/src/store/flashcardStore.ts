@@ -109,6 +109,7 @@ interface FlashcardState {
     deckId: string,
     reviews: Array<{ cardId: string; grade: ReviewGrade }>,
   ) => Promise<void>;
+  reset: () => void;
 }
 
 export const useFlashcardStore = create<FlashcardState>((set, get) => ({
@@ -520,5 +521,25 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
       totalReviewed: reviews.length,
     });
     await get().fetchDecks();
+  },
+
+  reset: () => {
+    // Auth transition: drop ALL user data.
+    set({
+      decks: [],
+      currentDeck: null,
+      cards: [],
+      dueCards: [],
+      sessionCards: [],
+      sessionResults: null,
+      isLoading: false,
+      isGenerating: false,
+      notesForGeneration: [],
+      stats: null,
+      weakCards: [],
+      aiSuggestion: null,
+      isFetchingStats: false,
+      isFetchingWeak: false,
+    });
   },
 }));

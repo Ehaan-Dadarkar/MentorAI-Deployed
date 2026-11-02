@@ -46,6 +46,7 @@ interface WorkspaceState {
   importPdf: (file: File) => Promise<PdfImportResult>;
 
   deletePermanently: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -225,5 +226,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       trashNotes: state.trashNotes.filter((n) => n._id !== id),
     }));
+  },
+  reset: () => {
+    // Auth transition: drop ALL user data.
+    set({
+      notes: [],
+      trashNotes: [],
+      activeNote: null,
+      editorContent: "",
+      filters: { search: "", subject: null },
+      isLoading: false,
+      isSaving: false,
+      isImportingPdf: false,
+      lastSavedAt: null,
+    });
   },
 }));

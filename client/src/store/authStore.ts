@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/axios";
+import { resetUserStores } from "@/lib/resetUserStores";
 import type { User } from "@/types";
 
 interface AuthState {
@@ -49,6 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await api.post("/auth/logout");
     set({ user: null, isAuthenticated: false, sessionExpired: false });
+    resetUserStores();
   },
   // Slice 44: session revocation (Backend M8) client. The server bumps
   // tokenVersion and clears the cookie, so every session dies; the
@@ -56,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logoutEverywhere: async () => {
     await api.post("/auth/logout-everywhere");
     set({ user: null, isAuthenticated: false, sessionExpired: false });
+    resetUserStores();
   },
 
   // On success the server bumps tokenVersion and clears the cookie,
@@ -67,6 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   changePassword: async (currentPassword, newPassword) => {
     await api.post("/auth/change-password", { currentPassword, newPassword });
     set({ user: null, isAuthenticated: false, sessionExpired: false });
+    resetUserStores();
   },
 
   checkAuth: async () => {
@@ -85,6 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // it would erase the "session expired" notice on the login page.
       if (error?.response?.status === 401) {
         set({ user: null, isAuthenticated: false, isLoading: false });
+        resetUserStores();
       } else {
         // For network/CORS/timeout errors, keep current user state but mark loading complete.
         set({ isLoading: false });
@@ -113,4 +118,5 @@ export function handleSessionExpired(): void {
     isLoading: false,
     sessionExpired: true,
   });
+  resetUserStores();
 }

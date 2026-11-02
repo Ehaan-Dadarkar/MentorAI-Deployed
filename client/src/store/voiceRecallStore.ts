@@ -117,6 +117,7 @@ interface VoiceRecallState {
   reevaluateResponse: (index: number) => Promise<void>;
   endSession: () => Promise<void>;
   resetSession: () => void;
+  reset: () => void;
 }
 
 export const useVoiceRecallStore = create<VoiceRecallState>((set, get) => ({
@@ -394,6 +395,30 @@ export const useVoiceRecallStore = create<VoiceRecallState>((set, get) => ({
       avgScore: 0,
       weakConcepts: [],
       sessionId: null,
+    });
+  },
+
+  reset: () => {
+    // Auth transition: drop ALL user data (incl. the notes list).
+    set({
+      selectedNoteId: null,
+      topic: "",
+      questionCount: 5,
+      notes: [],
+      step: "setup",
+      questions: [],
+      responses: [],
+      currentQuestionIndex: 0,
+      confidence: 3,
+      questionSetId: null,
+      questionSource: null,
+      avgScore: 0,
+      weakConcepts: [],
+      sessionId: null,
+      isLoadingNotes: false,
+      isGenerating: false,
+      isEvaluating: false,
+      isSaving: false,
     });
   },
 }));

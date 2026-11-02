@@ -31,6 +31,7 @@ interface KnowledgeGraphState {
   setShowWeakOnly: (value: boolean) => void;
   setQuery: (value: string) => void;
   clearFilters: () => void;
+  reset: () => void;
 }
 
 export const useKnowledgeGraphStore = create<KnowledgeGraphState>((set, get) => ({
@@ -111,4 +112,18 @@ export const useKnowledgeGraphStore = create<KnowledgeGraphState>((set, get) => 
       showWeakOnly: false,
       query: "",
     }),
+  reset: () => {
+    // Auth transition: drop ALL user data.
+    set({
+      nodes: [],
+      edges: [],
+      meta: null,
+      isLoading: false,
+      error: null,
+      selectedNodeId: null,
+      subjectFilters: [],
+      showWeakOnly: false,
+      query: "",
+    });
+  },
 }));

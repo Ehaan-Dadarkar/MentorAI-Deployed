@@ -60,6 +60,7 @@ interface ConversationState {
   setActiveSessionId: (id: string | null) => void;
   setActiveSessionName: (name: string | null) => void;
   newConversation: () => void;
+  reset: () => void;
   loadSessions: () => Promise<void>;
   loadSessionConversation: (sessionId: string) => Promise<void>;
   renameSession: (sessionId: string, name: string) => Promise<void>;
@@ -167,6 +168,28 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       activeSessionName: null,
       isStreaming: false,
       sessionSaveFailed: false,
+    });
+  },
+
+  reset: () => {
+    // Auth transition: drop ALL user data so the next account on a
+    // shared device never sees the previous user's threads.
+    streamStopReason = "stopped";
+    streamController?.abort();
+    set({
+      context: "",
+      mode: "explain",
+      activeSessionName: null,
+      activeSessionId: null,
+      messages: [],
+      sessions: [],
+      selectedNoteIds: [],
+      selectedNotes: [],
+      availableNotes: [],
+      isSavingNotes: false,
+      isStreaming: false,
+      sessionSaveFailed: false,
+      flashcardsSaved: 0,
     });
   },
 

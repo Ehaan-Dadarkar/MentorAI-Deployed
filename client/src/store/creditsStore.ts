@@ -54,6 +54,7 @@ interface CreditsState {
   buyPack: (packId: string) => Promise<void>;
   captureOrder: (orderId: string) => Promise<void>;
   clearNotice: () => void;
+  reset: () => void;
 }
 
 export const useCreditsStore = create<CreditsState>((set, get) => ({
@@ -159,4 +160,16 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
   },
 
   clearNotice: () => set({ notice: null, error: null }),
+
+  reset: () => {
+    // Auth transition: drop the balance cache (packs are public).
+    set({
+      balance: null,
+      balanceLoaded: false,
+      buyingPackId: null,
+      isCapturing: false,
+      error: null,
+      notice: null,
+    });
+  },
 }));
