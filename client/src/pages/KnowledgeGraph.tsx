@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
-import { guardOpenRouterAction } from "@/lib/apiKeyGate";
+import { guardOpenRouterAction, isOpenRouterActionBlocked } from "@/lib/apiKeyGate";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 
 // ── Animation Config ────────────────────────────────────────
@@ -88,8 +88,8 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest uppercase transition-colors",
-      active ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA]",
+      "text-label font-bold tracking-widest uppercase transition-colors",
+      active ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA]",
       className
     )}
   >
@@ -117,7 +117,7 @@ const SecondaryButton = ({
       "group relative inline-flex items-center justify-center gap-2",
       // ↓ responsive padding
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none",
@@ -194,6 +194,18 @@ function defaultMeta(): KnowledgeGraphMeta {
 
 // ── Main Component ───────────────────────────────────────────
 
+// M10: keyless users with no spendable credits load the structural
+// (non-AI) graph instead of hitting the gate; AI-enhanced links need
+// a key or credits.
+async function loadGraphForAccess(options?: { force?: boolean }) {
+  const fetchGraph = useKnowledgeGraphStore.getState().fetchGraph;
+  if (await isOpenRouterActionBlocked()) {
+    fetchGraph({ useAi: false, force: options?.force });
+    return;
+  }
+  fetchGraph({ useAi: true, force: options?.force });
+}
+
 export default function KnowledgeGraph() {
   const navigate = useNavigate();
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -220,8 +232,7 @@ export default function KnowledgeGraph() {
   const isEmpty = !isLoading && !error && nodes.length === 0;
 
   useEffect(() => {
-    if (guardOpenRouterAction()) return;
-    fetchGraph({ useAi: true });
+    void loadGraphForAccess();
   }, [fetchGraph]);
   useEffect(() => { setSearchInput(query); }, [query]);
 
@@ -361,7 +372,7 @@ export default function KnowledgeGraph() {
     const colorScale = d3
       .scaleLinear<string>()
       .domain([0, 45, 70, 100])
-      .range(["#FF3D00", "#737373", "#A3A3A3", "#FAFAFA"]);
+      .range(["#FF3D00", "#8a8a8a", "#A3A3A3", "#FAFAFA"]);
 
     const graphNodes: GraphSimNode[] = visibleNodes.map((node) => ({ ...node }));
     const graphLinks: GraphSimLink[] = visibleEdges.map((edge) => ({ ...edge }));
@@ -570,14 +581,14 @@ export default function KnowledgeGraph() {
         >
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center border-b border-[#262626] pb-4">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-[#0A0A0A] bg-[#FAFAFA] px-3 py-1 uppercase">
+              <span className="text-label font-bold tracking-[0.2em] text-[#0A0A0A] bg-[#FAFAFA] px-3 py-1 uppercase">
                 {getNodeTypeLabel(selectedNode.type)}
               </span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-black tracking-tighter leading-none break-words uppercase text-[#FAFAFA]">
               {selectedNode.label}
             </h3>
-            <p className="text-xs font-bold tracking-widest text-[#737373] uppercase">
+            <p className="text-xs font-bold tracking-widest text-[#8a8a8a] uppercase">
               SUBJECT: {selectedNode.subject}
             </p>
           </div>
@@ -586,7 +597,7 @@ export default function KnowledgeGraph() {
             <div className="space-y-8 sm:space-y-10">
               {selectedNoteResources.length > 0 && (
                 <div className="space-y-4">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block border-b border-[#262626] pb-2">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
                     RESOURCES
                   </span>
                   <div className="border-t border-l border-[#262626]">
@@ -607,7 +618,7 @@ export default function KnowledgeGraph() {
 
               {selectedNoteConcepts.length > 0 && (
                 <div className="space-y-4">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block border-b border-[#262626] pb-2">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
                     CONCEPTS
                   </span>
                   <div className="flex flex-wrap gap-2">
@@ -615,7 +626,7 @@ export default function KnowledgeGraph() {
                       <button
                         key={node.id}
                         onClick={() => setSelectedNodeId(node.id)}
-                        className="px-3 sm:px-4 py-2 border border-[#262626] bg-[#0A0A0A] text-[10px] font-bold tracking-widest text-[#FAFAFA] hover:bg-[#FAFAFA] hover:text-[#0A0A0A] transition-colors uppercase"
+                        className="px-3 sm:px-4 py-2 border border-[#262626] bg-[#0A0A0A] text-label font-bold tracking-widest text-[#FAFAFA] hover:bg-[#FAFAFA] hover:text-[#0A0A0A] transition-colors uppercase"
                       >
                         {node.label}
                       </button>
@@ -630,7 +641,7 @@ export default function KnowledgeGraph() {
             <div className="space-y-8 sm:space-y-10">
               {selectedConceptNotes.length > 0 && (
                 <div className="space-y-4">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block border-b border-[#262626] pb-2">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
                     ORIGIN NOTES
                   </span>
                   <div className="border-t border-l border-[#262626]">
@@ -651,7 +662,7 @@ export default function KnowledgeGraph() {
 
               {selectedConceptLinks.length > 0 && (
                 <div className="space-y-4">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block border-b border-[#262626] pb-2">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
                     RELATED CONCEPTS
                   </span>
                   <div className="border-t border-l border-[#262626]">
@@ -684,7 +695,7 @@ export default function KnowledgeGraph() {
           {isResourceType(selectedNode.type) && (
             <div className="space-y-8 sm:space-y-10">
               <div className="space-y-4">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block border-b border-[#262626] pb-2">
+                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
                   ORIGIN NOTE
                 </span>
                 {selectedResourceParent ? (
@@ -698,7 +709,7 @@ export default function KnowledgeGraph() {
                   </button>
                 ) : (
                   <div className="border border-[#262626] p-4 text-center">
-                    <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">ORPHANED</p>
+                    <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">ORPHANED</p>
                   </div>
                 )}
               </div>
@@ -724,8 +735,8 @@ export default function KnowledgeGraph() {
           exit={{ opacity: 0 }}
           className="flex flex-col items-center text-center p-8 sm:p-16 border border-[#262626] bg-[#0A0A0A] mt-8"
         >
-          <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#737373]">WAITING.</h3>
-          <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+          <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#8a8a8a]">WAITING.</h3>
+          <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
             SELECT A NODE TO INSPECT
           </p>
         </motion.div>
@@ -764,11 +775,11 @@ export default function KnowledgeGraph() {
               >
                 KNOWLEDGE
                 <br />
-                <span className="text-[#737373]">GRAPH.</span>
+                <span className="text-[#8a8a8a]">GRAPH.</span>
               </motion.h1>
               <motion.div variants={fadeUp} className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   <span className="hidden sm:inline">INTERACTIVE ONTOLOGY VISUALIZER</span>
                   <span className="sm:hidden">ONTOLOGY MAP</span>
                 </p>
@@ -778,8 +789,8 @@ export default function KnowledgeGraph() {
             {/* ↓ controls row: stacks on mobile, column from md */}
             <motion.div variants={fadeUp} className="flex flex-row sm:flex-col gap-3 sm:gap-4 sm:min-w-[200px]">
               <PrimaryButton
-                onClick={() => {
-                  if (guardOpenRouterAction()) return;
+                onClick={async () => {
+                  if (await guardOpenRouterAction()) return;
                   fetchGraph({ useAi: true, force: true });
                 }}
                 className="flex-1 sm:flex-none justify-center sm:justify-start"
@@ -821,7 +832,7 @@ export default function KnowledgeGraph() {
             <div className="flex items-center gap-3 sm:gap-4 border-b border-[#262626] pb-2">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#737373]" />
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a8a8a]" />
                 </div>
                 <input
                   type="text"
@@ -832,7 +843,7 @@ export default function KnowledgeGraph() {
                 />
               </div>
               <div className="hidden sm:block h-[1px] w-24 bg-[#262626]" />
-              <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase whitespace-nowrap">
+              <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase whitespace-nowrap">
                 {metaView.nodeCount.toString().padStart(2, "0")}
                 <span className="hidden sm:inline"> NODES</span>
               </span>
@@ -846,14 +857,14 @@ export default function KnowledgeGraph() {
               <div className="p-4 sm:p-6 md:p-8 border-b border-r border-[#262626] flex flex-col justify-between group cursor-pointer relative overflow-hidden">
                 <div className="absolute inset-0 bg-[#FAFAFA] origin-bottom scale-y-0 transition-transform duration-500 ease-[0.25,0,0,1] group-hover:scale-y-100 z-0" />
                 <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 sm:mb-4">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 sm:mb-4">
                     NODES / EDGES
                   </span>
                   <div>
                     {/* ↓ number scales from text-2xl */}
                     <span className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">{metaView.nodeCount}</span>
-                    <span className="text-base sm:text-xl text-[#737373] font-bold mx-1 sm:mx-2">/</span>
-                    <span className="text-base sm:text-xl text-[#737373] font-bold">{metaView.edgeCount}</span>
+                    <span className="text-base sm:text-xl text-[#8a8a8a] font-bold mx-1 sm:mx-2">/</span>
+                    <span className="text-base sm:text-xl text-[#8a8a8a] font-bold">{metaView.edgeCount}</span>
                   </div>
                 </div>
               </div>
@@ -862,7 +873,7 @@ export default function KnowledgeGraph() {
               <div className="p-4 sm:p-6 md:p-8 border-b border-r border-[#262626] flex flex-col justify-between group cursor-pointer relative overflow-hidden">
                 <div className="absolute inset-0 bg-[#FAFAFA] origin-bottom scale-y-0 transition-transform duration-500 ease-[0.25,0,0,1] group-hover:scale-y-100 z-0" />
                 <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 sm:mb-4">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 sm:mb-4">
                     NODE TYPES
                   </span>
                   <span className="text-base sm:text-xl font-bold tracking-tight">
@@ -874,7 +885,7 @@ export default function KnowledgeGraph() {
               {/* Filters — full width on mobile (col-span-2), 2-col from md */}
               <div className="p-4 sm:p-6 md:p-8 border-b border-r border-[#262626] col-span-2 md:col-span-2 flex flex-col gap-3 sm:gap-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     STATE FILTERS
                   </span>
                   <div className="flex gap-1 sm:gap-2">
@@ -897,10 +908,10 @@ export default function KnowledgeGraph() {
                         key={subject}
                         onClick={() => toggleSubjectFilter(subject)}
                         className={cn(
-                          "px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] font-bold tracking-[0.2em] uppercase border transition-colors",
+                          "px-3 sm:px-4 py-1 sm:py-1.5 text-label font-bold tracking-[0.2em] uppercase border transition-colors",
                           active
                             ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                            : "border-[#262626] text-[#737373] hover:text-[#FAFAFA] hover:border-[#FAFAFA]"
+                            : "border-[#262626] text-[#8a8a8a] hover:text-[#FAFAFA] hover:border-[#FAFAFA]"
                         )}
                       >
                         {subject}
@@ -927,10 +938,9 @@ export default function KnowledgeGraph() {
               ) : error ? (
                 <div className="flex-1 border border-[#FF3D00] p-8 sm:p-16 flex flex-col items-center justify-center text-center bg-[#FF3D00]/5 min-h-[300px]">
                   <p className="text-base sm:text-lg font-bold tracking-tight text-[#FF3D00] uppercase mb-2">ERROR</p>
-                  <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">{error}</p>
-                  <PrimaryButton onClick={() => {
-                    if (guardOpenRouterAction()) return;
-                    fetchGraph({ force: true });
+                  <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">{error}</p>
+                  <PrimaryButton onClick={async () => {
+                    await loadGraphForAccess({ force: true });
                   }}>
                     RETRY <ArrowRight className="w-4 h-4 ml-1" />
                   </PrimaryButton>
@@ -938,12 +948,11 @@ export default function KnowledgeGraph() {
               ) : isEmpty ? (
                 <div className="flex-1 p-8 sm:p-16 flex flex-col items-center text-center justify-center bg-[#0A0A0A] min-h-[300px]">
                   <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">VOID.</h3>
-                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8 max-w-sm">
+                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8 max-w-sm">
                     NO GRAPH DATA CURRENTLY AVAILABLE. INITIATE STUDY SESSIONS.
                   </p>
-                  <PrimaryButton onClick={() => {
-                    if (guardOpenRouterAction()) return;
-                    fetchGraph({ force: true });
+                  <PrimaryButton onClick={async () => {
+                    await loadGraphForAccess({ force: true });
                   }}>
                     REFRESH <ArrowRight className="w-4 h-4 ml-1" />
                   </PrimaryButton>
@@ -951,7 +960,7 @@ export default function KnowledgeGraph() {
               ) : visibleNodes.length === 0 ? (
                 <div className="flex-1 p-8 sm:p-16 flex flex-col items-center text-center justify-center bg-[#0A0A0A] min-h-[300px]">
                   <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">VOID.</h3>
-                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">
                     ZERO NODES MATCHING CURRENT FILTERS.
                   </p>
                   <SecondaryButton onClick={clearFilters}>RESET FILTERS</SecondaryButton>
@@ -968,9 +977,9 @@ export default function KnowledgeGraph() {
                   {/* Legend overlay */}
                   <div className="absolute left-3 sm:left-6 bottom-3 sm:bottom-6 border border-[#262626] bg-[#0A0A0A]/90 p-3 sm:p-4">
                     <div className="space-y-2 sm:space-y-3">
-                      <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">SHAPES</span>
+                      <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block">SHAPES</span>
                       {/* ↓ stacks on very small screens, row on sm */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[10px] font-bold tracking-widest text-[#FAFAFA]">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-label font-bold tracking-widest text-[#FAFAFA]">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-3 border border-[#FAFAFA] bg-transparent" /> NOTE
                         </div>
@@ -988,7 +997,7 @@ export default function KnowledgeGraph() {
                   {selectedNode && (
                     <button
                       onClick={() => setShowInspector(true)}
-                      className="xl:hidden absolute right-3 bottom-3 border border-[#FF3D00] bg-[#0A0A0A]/90 px-3 py-2 text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase"
+                      className="xl:hidden absolute right-3 bottom-3 border border-[#FF3D00] bg-[#0A0A0A]/90 px-3 py-2 text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase"
                     >
                       INSPECT ↑
                     </button>
@@ -1000,9 +1009,9 @@ export default function KnowledgeGraph() {
             {/* INSPECTOR — sidebar on xl, hidden on smaller (replaced by sheet) */}
             <div className="hidden xl:flex flex-col bg-[#0A0A0A] h-full xl:max-h-[80vh] overflow-y-auto custom-scrollbar">
               <div className="p-6 sm:p-8 border-b border-[#262626] sticky top-0 bg-[#0A0A0A] z-10 flex items-center justify-between">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">INSPECTOR</span>
+                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">INSPECTOR</span>
                 {selectedNode && (
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                     {selectedNode.mastery}% MST
                   </span>
                 )}
@@ -1040,16 +1049,16 @@ export default function KnowledgeGraph() {
 
                   {/* Header */}
                   <div className="px-5 py-4 border-b border-[#262626] flex items-center justify-between sticky top-0 bg-[#0A0A0A] z-10">
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">INSPECTOR</span>
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">INSPECTOR</span>
                     <div className="flex items-center gap-4">
                       {selectedNode && (
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                        <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                           {selectedNode.mastery}% MST
                         </span>
                       )}
                       <button
                         onClick={() => setShowInspector(false)}
-                        className="text-[10px] font-bold tracking-[0.2em] text-[#737373] hover:text-[#FAFAFA] uppercase transition-colors"
+                        className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] hover:text-[#FAFAFA] uppercase transition-colors"
                       >
                         CLOSE ✕
                       </button>
@@ -1079,7 +1088,7 @@ export default function KnowledgeGraph() {
           <p className="font-bold text-xs text-[#FAFAFA] tracking-wider mb-2 sm:mb-3 uppercase border-b border-[#262626] pb-2">
             {tooltip.node.label.length > 30 ? `${tooltip.node.label.substring(0, 27)}...` : tooltip.node.label}
           </p>
-          <div className="space-y-1 text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+          <div className="space-y-1 text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
             <p>TYPE: {getNodeTypeLabel(tooltip.node.type)}</p>
             <p>SUB: {tooltip.node.subject}</p>
             <p>MST: {tooltip.node.mastery}%</p>

@@ -80,7 +80,7 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase",
+      "text-label font-bold tracking-widest text-[#8a8a8a] uppercase",
       "hover:text-[#FAFAFA] transition-colors",
       className
     )}
@@ -112,7 +112,7 @@ const SecondaryButton = ({
       "group relative inline-flex items-center justify-center gap-2",
       // ↓ responsive padding
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none",
@@ -171,7 +171,7 @@ function Modal({ open, onClose, children, title }: ModalProps) {
               </h3>
               <button
                 onClick={onClose}
-                className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -214,7 +214,7 @@ function AddCardModal({
     <Modal open={open} onClose={onClose} title="NEW ENTITY INJECTION">
       <div className="space-y-6 sm:space-y-8">
         <div>
-          <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+          <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
             QUERY SEQUENCE
           </label>
           <textarea
@@ -227,7 +227,7 @@ function AddCardModal({
         </div>
 
         <div>
-          <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+          <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
             SOLUTION DATA
           </label>
           <textarea
@@ -240,7 +240,7 @@ function AddCardModal({
         </div>
 
         <div>
-          <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+          <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
             DIFFICULTY PROTOCOL
           </label>
           {/* ↓ flex-wrap so buttons don't overflow on very small screens */}
@@ -251,10 +251,10 @@ function AddCardModal({
                 onClick={() => setDifficulty(level)}
                 className={cn(
                   // ↓ flex-1 so they share space, responsive padding
-                  "flex-1 border px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold tracking-widest uppercase transition-colors",
+                  "flex-1 border px-4 sm:px-6 py-3 sm:py-4 text-label font-bold tracking-widest uppercase transition-colors",
                   difficulty === level
                     ? "border-[#FAFAFA] text-[#0A0A0A] bg-[#FAFAFA]"
-                    : "border-[#262626] text-[#737373] hover:border-[#FAFAFA] hover:text-[#FAFAFA] bg-transparent"
+                    : "border-[#262626] text-[#8a8a8a] hover:border-[#FAFAFA] hover:text-[#FAFAFA] bg-transparent"
                 )}
               >
                 {level}
@@ -377,7 +377,7 @@ export default function FlashcardDeckDetail() {
                 className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6"
               >
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   {currentDeck?.subject || "GENERAL SUBJECT"}
                 </p>
               </motion.div>
@@ -414,7 +414,7 @@ export default function FlashcardDeckDetail() {
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 divide-x divide-y md:divide-y-0 divide-[#262626]">
             <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between">
               {/* ↓ tighter bottom margin on mobile */}
-              <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 sm:mb-8">
+              <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 sm:mb-8">
                 TOTAL VOLUME
               </p>
               {/* ↓ number scales from text-4xl up */}
@@ -423,7 +423,7 @@ export default function FlashcardDeckDetail() {
               </p>
             </div>
             <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between">
-              <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase mb-4 sm:mb-8">
+              <p className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase mb-4 sm:mb-8">
                 DUE TODAY
               </p>
               <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FF3D00] leading-none">
@@ -432,7 +432,7 @@ export default function FlashcardDeckDetail() {
             </div>
             {/* ↓ col-span-2 on mobile (fills row), 1 col from md */}
             <div className="p-5 sm:p-8 md:p-12 flex flex-col justify-between col-span-2 md:col-span-1 border-t md:border-t-0 border-[#262626]">
-              <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 sm:mb-8">
+              <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 sm:mb-8">
                 MASTERED
               </p>
               <p className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-[#FAFAFA] leading-none">
@@ -482,10 +482,10 @@ export default function FlashcardDeckDetail() {
 
                   <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
                     <div className="flex justify-between items-start mb-4 sm:mb-6">
-                      <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#FF3D00] group-hover:text-[#0A0A0A]/60">
+                      <span className="text-label font-bold tracking-[0.2em] uppercase text-[#FF3D00] group-hover:text-[#0A0A0A]/60">
                         {card.difficulty}
                       </span>
-                      <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#0A0A0A]/60">
+                      <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#0A0A0A]/60">
                         MASTERY: {card.mastery}%
                       </span>
                     </div>
@@ -493,7 +493,7 @@ export default function FlashcardDeckDetail() {
                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
                       {card.question}
                     </h3>
-                    <p className="text-sm text-[#737373] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">
+                    <p className="text-sm text-[#8a8a8a] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">
                       {card.answer}
                     </p>
                   </div>
@@ -510,7 +510,7 @@ export default function FlashcardDeckDetail() {
               INVENTORY
             </h2>
             <div className="h-[1px] flex-1 bg-[#262626]" />
-            <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+            <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
               {cards.length.toString().padStart(2, "0")}
               <span className="hidden sm:inline"> TOTAL ENTITIES</span>
             </span>
@@ -531,7 +531,7 @@ export default function FlashcardDeckDetail() {
               <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
                 VOID.
               </h3>
-              <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+              <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">
                 NO ENTITIES POPULATED.
               </p>
               <PrimaryButton onClick={() => setShowAddCard(true)}>
@@ -559,19 +559,19 @@ export default function FlashcardDeckDetail() {
                     <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
                       <span
                         className={cn(
-                          "text-[10px] font-bold tracking-[0.2em] uppercase transition-colors group-hover:text-[#0A0A0A]/60",
+                          "text-label font-bold tracking-[0.2em] uppercase transition-colors group-hover:text-[#0A0A0A]/60",
                           card.difficulty === "hard"
                             ? "text-[#FF3D00]"
-                            : "text-[#737373]"
+                            : "text-[#8a8a8a]"
                         )}
                       >
                         {card.difficulty}
                       </span>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] group-hover:text-[#0A0A0A]/80 uppercase">
+                        <span className="text-label font-bold tracking-[0.2em] text-[#FAFAFA] group-hover:text-[#0A0A0A]/80 uppercase">
                           VOL {card.mastery}%
                         </span>
-                        <span className="text-[8px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#0A0A0A]/40 uppercase">
+                        <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#0A0A0A]/40 uppercase">
                           REV: {new Date(card.nextReview).toLocaleDateString()}
                         </span>
                       </div>
@@ -580,7 +580,7 @@ export default function FlashcardDeckDetail() {
                     <h3 className="text-lg sm:text-xl font-bold tracking-tight leading-tight mb-4 text-[#FAFAFA] group-hover:text-[#0A0A0A]">
                       {card.question}
                     </h3>
-                    <p className="text-sm text-[#737373] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">
+                    <p className="text-sm text-[#8a8a8a] group-hover:text-[#0A0A0A]/80 line-clamp-3 leading-relaxed mt-auto">
                       {card.answer}
                     </p>
                   </div>

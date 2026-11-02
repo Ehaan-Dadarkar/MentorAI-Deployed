@@ -199,7 +199,7 @@ export default function Settings() {
                 className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6"
               >
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   MANAGE PREFERENCES
                 </p>
               </motion.div>
@@ -222,7 +222,7 @@ export default function Settings() {
         {/* ── CONTENT ── */}
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-8 sm:py-12 md:py-16">
           {isDemo && (
-            <div className="mb-8 border border-[#262626] bg-[#FF3D00]/5 px-4 py-3 text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+            <div className="mb-8 border border-[#262626] bg-[#FF3D00]/5 px-4 py-3 text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
               DEMO ACCOUNT — SETTINGS ARE READ-ONLY
             </div>
           )}
@@ -257,7 +257,7 @@ export default function Settings() {
                         PROFILE
                       </h2>
                       <div className="h-px flex-1 bg-[#262626]" />
-                      <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+                      <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hidden sm:block">
                         01 ITEMS
                       </span>
                     </div>
@@ -265,7 +265,7 @@ export default function Settings() {
                     <div className="space-y-6 sm:space-y-8">
                       {/* Name */}
                       <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                        <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                           FULL NAME
                         </label>
                         <input
@@ -279,13 +279,13 @@ export default function Settings() {
 
                       {/* Email (read-only) */}
                       <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                        <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                           EMAIL ADDRESS
                         </label>
                         <input
                           value={user?.email || ""}
                           disabled
-                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#737373] focus:outline-none opacity-50 cursor-not-allowed uppercase"
+                          className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#8a8a8a] focus:outline-none opacity-50 cursor-not-allowed uppercase"
                         />
                       </div>
                     </div>
@@ -301,7 +301,7 @@ export default function Settings() {
                         SECURITY
                       </h2>
                       <div className="h-px flex-1 bg-[#262626]" />
-                      <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+                      <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hidden sm:block">
                         03 ITEMS
                       </span>
                     </div>
@@ -309,7 +309,7 @@ export default function Settings() {
                     <div className="space-y-6 sm:space-y-8">
                       {/* Change password — blocked for demo, like profile changes */}
                       <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                        <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                           CHANGE PASSWORD
                         </label>
                         <input
@@ -336,11 +336,11 @@ export default function Settings() {
                           disabled={isDemo}
                           className="mt-6 w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase"
                         />
-                        <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-[#737373] uppercase">
+                        <p className="mt-3 text-label font-bold tracking-[0.16em] text-[#8a8a8a] uppercase">
                           CHANGING YOUR PASSWORD LOGS OUT EVERY SESSION, INCLUDING THIS ONE.
                         </p>
                         {isDemo && (
-                          <p className="mt-3 text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                          <p className="mt-3 text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
                             NOT AVAILABLE FOR THE DEMO ACCOUNT.
                           </p>
                         )}
@@ -356,10 +356,10 @@ export default function Settings() {
 
                       {/* Log out everywhere — allowed for demo by server design */}
                       <div>
-                        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                        <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                           SESSIONS
                         </label>
-                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#737373] uppercase">
+                        <p className="text-label font-bold tracking-[0.16em] text-[#8a8a8a] uppercase">
                           LOG OUT EVERYWHERE ENDS YOUR SESSION ON ALL DEVICES, INCLUDING A STOLEN TOKEN.
                         </p>
                         <div className="mt-4">
@@ -375,7 +375,7 @@ export default function Settings() {
                       </div>
 
                       {secError && (
-                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                        <p className="text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
                           {secError}
                         </p>
                       )}

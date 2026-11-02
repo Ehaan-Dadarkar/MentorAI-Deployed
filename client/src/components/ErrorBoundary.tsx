@@ -1,5 +1,4 @@
 import { Component, type ReactNode } from "react";
-import { Button } from "@/components/ui/Button";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -52,20 +51,31 @@ export class ErrorBoundary extends Component<
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div className="flex h-screen items-center justify-center bg-bg px-4">
+      <div className="flex h-screen items-center justify-center bg-bg-primary px-4">
         <div className="max-w-sm text-center">
-          <h3 className="mb-1 text-sm font-medium text-text-primary">
+          <p className="mb-2 text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
+            RENDER FAULT
+          </p>
+          <h3 className="mb-1 text-sm font-bold tracking-[0.1em] text-text-primary uppercase">
             SOMETHING WENT WRONG
           </h3>
-          <p className="mb-4 text-xs text-text-secondary">
+          <p className="mb-6 text-xs text-[#8a8a8a] leading-5">
             This screen hit an unexpected error. Your saved data is
             untouched — try again, or go back home and come back to it.
           </p>
-          <div className="flex items-center justify-center gap-2">
-            <Button onClick={this.handleRetry}>TRY AGAIN</Button>
-            <Button variant="outline" onClick={this.handleGoHome}>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={this.handleRetry}
+              className="border border-[#FF3D00] bg-transparent px-6 py-3 text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase transition-all duration-300 hover:bg-[#FF3D00] hover:text-[#0A0A0A]"
+            >
+              TRY AGAIN
+            </button>
+            <button
+              onClick={this.handleGoHome}
+              className="border border-[#262626] bg-transparent px-6 py-3 text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase transition-all duration-300 hover:border-[#FAFAFA] hover:text-[#FAFAFA]"
+            >
               GO HOME
-            </Button>
+            </button>
           </div>
         </div>
       </div>

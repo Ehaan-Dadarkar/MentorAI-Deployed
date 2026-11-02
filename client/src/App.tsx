@@ -34,7 +34,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-bg">
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
         <LoadingSkeleton />
       </div>
     );
@@ -49,7 +49,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-bg">
+      <div className="flex h-screen items-center justify-center bg-bg-primary">
         <LoadingSkeleton />
       </div>
     );
@@ -79,7 +79,7 @@ function AppLayout() {
   return (
     <div
       className={cn(
-        "flex h-screen bg-bg text-text-primary overflow-hidden",
+        "flex h-screen bg-bg-primary text-text-primary overflow-hidden",
         hideSidebar && "block",
       )}
     >
@@ -177,7 +177,7 @@ export default function App() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center bg-bg">
+        <div className="flex h-screen items-center justify-center bg-bg-primary">
           <LoadingSkeleton />
         </div>
       }

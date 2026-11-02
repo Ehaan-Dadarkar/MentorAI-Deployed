@@ -405,9 +405,14 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       sessionSaveFailed: false,
     });
 
+    // H1: window the history sent per turn. The server accepts a long
+    // history but builds the prompt from the last 10 messages itself,
+    // so sending the whole thread only bloats the body. 20 keeps a
+    // margin for the server-side window without ever nearing the cap.
     const payloadMessages = [...state.messages, userMessage]
       .filter((msg) => msg.role === "user" || msg.role === "assistant")
-      .map((msg) => ({ role: msg.role, content: msg.content }));
+      .map((msg) => ({ role: msg.role, content: msg.content }))
+      .slice(-20);
 
     const noteContext = state.selectedNotes
       .map((note) => {

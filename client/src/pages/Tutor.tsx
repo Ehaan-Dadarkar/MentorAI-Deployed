@@ -77,7 +77,7 @@ function Modal({ open, onClose, children, title }: ModalProps) {
               </h2>
               <button
                 onClick={onClose}
-                className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -140,13 +140,13 @@ function HistoryDrawer({
                 <span className="text-sm font-bold tracking-tighter uppercase text-[#FAFAFA]">
                   HISTORY
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   {sessions.length.toString().padStart(2, "0")} ITEMS
                 </span>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                className="p-2 text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -159,12 +159,12 @@ function HistoryDrawer({
               ) : sessions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 gap-3 text-center px-6">
                   <div className="w-10 h-10 border border-[#262626] flex items-center justify-center">
-                    <History className="w-5 h-5 text-[#737373]" />
+                    <History className="w-5 h-5 text-[#8a8a8a]" />
                   </div>
-                  <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     NO SESSIONS YET.
                   </p>
-                  <p className="text-[10px] text-[#404040] uppercase tracking-wider">
+                  <p className="text-label text-[#404040] uppercase tracking-wider">
                     START CHATTING TO CREATE ONE.
                   </p>
                 </div>
@@ -198,7 +198,7 @@ function HistoryDrawer({
                                 ? session.promptPreview.slice(0, 28) + "..."
                                 : "UNTITLED SESSION"}
                           </p>
-                          <p className="text-[10px] text-[#737373] uppercase mt-1 truncate group-hover:text-[#404040] transition-colors">
+                          <p className="text-label text-[#8a8a8a] uppercase mt-1 truncate group-hover:text-[#404040] transition-colors">
                             {session.context || session.subject || "GENERAL"}
                           </p>
                         </button>
@@ -209,7 +209,7 @@ function HistoryDrawer({
                               e.stopPropagation();
                               onRename(session._id, session.name);
                             }}
-                            className="p-1 text-[#737373] hover:text-[#0A0A0A] transition-colors"
+                            className="p-1 text-[#8a8a8a] hover:text-[#0A0A0A] transition-colors"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -294,7 +294,7 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase",
+      "text-label font-bold tracking-widest text-[#8a8a8a] uppercase",
       "hover:text-[#FAFAFA] transition-colors disabled:opacity-50 disabled:pointer-events-none",
       className,
     )}
@@ -325,7 +325,7 @@ const SecondaryButton = ({
     className={cn(
       "group relative inline-flex items-center justify-center gap-2",
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none",
@@ -362,7 +362,7 @@ const TutorMessageMarkdown = memo(({ content }: { content: string }) => (
                                         h1: ({ children }) => <h1 className="text-lg sm:text-xl font-bold tracking-tight mb-3 text-[#FAFAFA]">{children}</h1>,
                                         h2: ({ children }) => <h2 className="text-base sm:text-lg font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h2>,
                                         h3: ({ children }) => <h3 className="text-sm sm:text-base font-bold tracking-tight mb-2 text-[#FAFAFA]">{children}</h3>,
-                                        blockquote: ({ children }) => <blockquote className="border-l-2 border-[#FF3D00] pl-4 my-3 text-[#737373] italic">{children}</blockquote>,
+                                        blockquote: ({ children }) => <blockquote className="border-l-2 border-[#FF3D00] pl-4 my-3 text-[#8a8a8a] italic">{children}</blockquote>,
                                       }}
                                     >
                                       {content}
@@ -454,7 +454,7 @@ export default function Tutor() {
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    if (guardOpenRouterAction()) return;
+    if (await guardOpenRouterAction()) return;
     setInput("");
     await sendMessage(trimmed);
   };
@@ -490,8 +490,8 @@ export default function Tutor() {
         <button
           onClick={() => setMode("explain")}
           className={cn(
-            "flex-1 px-4 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-colors relative",
-            mode === "explain" ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
+            "flex-1 px-4 py-3 text-label font-bold tracking-[0.2em] uppercase transition-colors relative",
+            mode === "explain" ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA]",
           )}
         >
           EXPLAIN
@@ -505,8 +505,8 @@ export default function Tutor() {
         <button
           onClick={() => setMode("socratic")}
           className={cn(
-            "flex-1 px-4 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-colors relative",
-            mode === "socratic" ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
+            "flex-1 px-4 py-3 text-label font-bold tracking-[0.2em] uppercase transition-colors relative",
+            mode === "socratic" ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA]",
           )}
         >
           SOCRATIC
@@ -520,7 +520,7 @@ export default function Tutor() {
       </div>
 
       <div>
-        <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+        <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
           NOTES
         </label>
         <SecondaryButton
@@ -575,12 +575,12 @@ export default function Tutor() {
               <motion.button
                 variants={fadeUp}
                 onClick={() => setHistoryDrawerOpen(true)}
-                className="lg:hidden flex items-center gap-2 border border-[#262626] px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors self-center"
+                className="lg:hidden flex items-center gap-2 border border-[#262626] px-4 py-3 text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors self-center"
               >
                 <History className="w-4 h-4" />
                 HISTORY
                 {sessions.length > 0 && (
-                  <span className="bg-[#FF3D00] text-[#0A0A0A] text-[9px] font-black px-1.5 py-0.5 min-w-[18px] text-center">
+                  <span className="bg-[#FF3D00] text-[#0A0A0A] text-label font-black px-1.5 py-0.5 min-w-[18px] text-center">
                     {sessions.length}
                   </span>
                 )}
@@ -595,12 +595,12 @@ export default function Tutor() {
               {/* Mode subtitle */}
               <div className="flex items-center gap-4">
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hidden sm:block">
                   {mode === "socratic"
                     ? "GUIDED QUESTIONING MODE"
                     : "DIRECT EXPLANATION MODE"}
                 </p>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase sm:hidden">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase sm:hidden">
                   {mode === "socratic" ? "SOCRATIC" : "EXPLAIN"}
                 </p>
               </div>
@@ -609,7 +609,7 @@ export default function Tutor() {
               <div className="flex items-center gap-2 lg:hidden">
                 <button
                   onClick={() => setContextModalOpen(true)}
-                  className="flex items-center gap-2 border border-[#262626] px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors"
+                  className="flex items-center gap-2 border border-[#262626] px-4 py-3 text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   CONTEXT
@@ -621,7 +621,7 @@ export default function Tutor() {
                     setInput("");
                     inputRef.current?.focus();
                   }}
-                  className="flex items-center gap-2 border border-[#FF3D00] px-4 py-3 text-[10px] font-bold tracking-widest text-[#FF3D00] uppercase hover:bg-[#FF3D00] hover:text-[#0A0A0A] transition-colors"
+                  className="flex items-center gap-2 border border-[#FF3D00] px-4 py-3 text-label font-bold tracking-widest text-[#FF3D00] uppercase hover:bg-[#FF3D00] hover:text-[#0A0A0A] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   NEW
@@ -672,7 +672,7 @@ export default function Tutor() {
                     HISTORY
                   </h2>
                   <div className="h-[1px] flex-1 bg-[#262626]" />
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     {sessions.length.toString().padStart(2, "0")} ITEMS
                   </span>
                 </div>
@@ -682,7 +682,7 @@ export default function Tutor() {
                   ) : sessions.length === 0 ? (
                     <div className="p-8 border-b border-[#262626] flex flex-col items-center text-center">
                       <h3 className="text-xl font-bold tracking-tighter mb-2">VOID.</h3>
-                      <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                      <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                         NO HISTORY FOUND.
                       </p>
                     </div>
@@ -712,7 +712,7 @@ export default function Tutor() {
                                     ? session.promptPreview.slice(0, 30) + "..."
                                     : "UNTITLED SESSION"}
                               </p>
-                              <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mt-1 truncate">
+                              <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mt-1 truncate">
                                 {session.context || session.subject || "GENERAL"}
                               </p>
                             </button>
@@ -720,7 +720,7 @@ export default function Tutor() {
                           <div className="relative z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity pl-4">
                             <button
                               onClick={() => void handleRenameSession(session._id, session.name)}
-                              className="text-[#737373] hover:text-[#0A0A0A]"
+                              className="text-[#8a8a8a] hover:text-[#0A0A0A]"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
@@ -750,15 +750,15 @@ export default function Tutor() {
               {/* Chat Header */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#262626] flex-wrap gap-2">
                 <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase px-2 sm:px-3 py-1 border border-[#262626] truncate max-w-[140px] sm:max-w-none">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase px-2 sm:px-3 py-1 border border-[#262626] truncate max-w-[140px] sm:max-w-none">
                     {activeSessionName || "UNSAVED SESSION"}
                   </span>
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase px-2 sm:px-3 py-1 border border-[#FF3D00]">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase px-2 sm:px-3 py-1 border border-[#FF3D00]">
                     {selectedCountLabel}
                   </span>
                 </div>
                 {isSavingNotes && (
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase animate-pulse">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase animate-pulse">
                     SYNCING...
                   </span>
                 )}
@@ -766,7 +766,7 @@ export default function Tutor() {
 
               {deepLinkTopics && (
                 <div className="flex items-center justify-between gap-4 border-b border-[#262626] px-4 sm:px-6 py-3">
-                  <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase truncate">
+                  <p className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase truncate">
                     TOPIC: {deepLinkTopics.join(", ")}
                   </p>
                   <button
@@ -774,7 +774,7 @@ export default function Tutor() {
                       setDeepLinkTopics(null);
                       setContext("");
                     }}
-                    className="text-[#737373] hover:text-[#FAFAFA] transition-colors shrink-0"
+                    className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors shrink-0"
                     aria-label="Dismiss topic"
                   >
                     <X className="w-4 h-4" />
@@ -794,7 +794,7 @@ export default function Tutor() {
                     <h3 className="text-2xl sm:text-4xl font-bold tracking-tighter mb-3 text-[#FAFAFA]">
                       AWAITING INPUT.
                     </h3>
-                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8 leading-relaxed">
+                    <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8 leading-relaxed">
                       ASK A TOPIC, ATTACH NOTES, GET STREAMED ANSWERS.
                     </p>
                     <div className="flex gap-2 overflow-x-auto pb-2 w-full justify-start sm:justify-center flex-nowrap sm:flex-wrap">
@@ -805,7 +805,7 @@ export default function Tutor() {
                             setInput(prompt);
                             inputRef.current?.focus();
                           }}
-                          className="shrink-0 text-[9px] sm:text-[10px] px-3 py-2"
+                          className="shrink-0 text-label px-3 py-2"
                         >
                           {prompt}
                         </SecondaryButton>
@@ -837,18 +837,18 @@ export default function Tutor() {
                                 <div className="w-5 h-5 border border-[#FF3D00] flex items-center justify-center">
                                   <Bot className="w-2.5 h-2.5 text-[#FF3D00]" />
                                 </div>
-                                <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                                <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                                   AI TUTOR
                                 </span>
                               </div>
                             )}
                             {message.role === "user" && (
                               <div className="flex items-center justify-end gap-3 mb-3">
-                                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                                   USER
                                 </span>
                                 <div className="w-5 h-5 border border-[#262626] flex items-center justify-center">
-                                  <User className="w-2.5 h-2.5 text-[#737373]" />
+                                  <User className="w-2.5 h-2.5 text-[#8a8a8a]" />
                                 </div>
                               </div>
                             )}
@@ -871,16 +871,16 @@ export default function Tutor() {
                             {message.role === "user" &&
                               message.failed && (
                               <div className="mt-3 flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                                <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                                   NOT SENT — ADD A KEY OR CREDITS, THEN RETRY
                                 </span>
                                 <button
-                                  onClick={() => {
-                                    if (guardOpenRouterAction()) return;
+                                  onClick={async () => {
+                                    if (await guardOpenRouterAction()) return;
                                     void retryMessage(message.id);
                                   }}
                                   disabled={isStreaming}
-                                  className="border border-[#FF3D00] px-3 py-1.5 text-[9px] sm:text-[10px] font-bold tracking-[0.1em] text-[#FAFAFA] uppercase hover:bg-[#FF3D00] transition-colors disabled:opacity-50"
+                                  className="border border-[#FF3D00] px-3 py-1.5 text-label font-bold tracking-[0.1em] text-[#FAFAFA] uppercase hover:bg-[#FF3D00] transition-colors disabled:opacity-50"
                                 >
                                   RETRY
                                 </button>
@@ -893,11 +893,11 @@ export default function Tutor() {
                                 {message.followUps.map((followUp) => (
                                   <button
                                     key={`${message.id}-${followUp}`}
-                                    onClick={() => {
-                                      if (guardOpenRouterAction()) return;
+                                    onClick={async () => {
+                                      if (await guardOpenRouterAction()) return;
                                       void sendMessage(followUp);
                                     }}
-                                    className="border border-[#262626] px-3 py-1.5 text-[9px] sm:text-[10px] font-bold tracking-[0.1em] text-[#737373] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors"
+                                    className="border border-[#262626] px-3 py-1.5 text-label font-bold tracking-[0.1em] text-[#8a8a8a] uppercase hover:text-[#FAFAFA] hover:border-[#FAFAFA] transition-colors"
                                   >
                                     {followUp}
                                   </button>
@@ -910,16 +910,16 @@ export default function Tutor() {
                     </AnimatePresence>
 
                     {isStreaming && (
-                      <div className="flex items-center gap-3 text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                      <div className="flex items-center gap-3 text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                         <Loader2 className="w-3 h-3 animate-spin" /> STREAMING...
                       </div>
                     )}
                     {sessionSaveFailed && (
                       <div className="border border-[#FF3D00] p-4">
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                        <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                           NOT SAVED — THIS REPLY WAS NOT SAVED TO YOUR HISTORY
                         </span>
-                        <p className="mt-2 text-xs text-[#737373] leading-relaxed">
+                        <p className="mt-2 text-xs text-[#8a8a8a] leading-relaxed">
                           The reply above is shown in full, but this turn was not saved to your session history. Copy anything you want to keep before leaving this conversation.
                         </p>
                       </div>
@@ -945,7 +945,7 @@ export default function Tutor() {
                     placeholder="ENTER QUERY..."
                     disabled={isStreaming}
                     rows={1}
-                    className="w-full bg-transparent border-b border-[#262626] py-2 text-xs sm:text-sm text-[#FAFAFA] placeholder:text-[#737373] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase resize-none min-h-[40px]"
+                    className="w-full bg-transparent border-b border-[#262626] py-2 text-xs sm:text-sm text-[#FAFAFA] placeholder:text-[#8a8a8a] focus:outline-none focus:border-[#FAFAFA] transition-colors uppercase resize-none min-h-[40px]"
                   />
                   <PrimaryButton
                     onClick={() => {
@@ -968,7 +968,7 @@ export default function Tutor() {
                     )}
                   </PrimaryButton>
                 </div>
-                <p className="mt-2 text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+                <p className="mt-2 text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hidden sm:block">
                   SHIFT + ENTER FOR NEW LINE
                 </p>
               </div>
@@ -1008,7 +1008,7 @@ export default function Tutor() {
           <GhostButton
             onClick={() => void clearNotes()}
             disabled={isSavingNotes || selectedNoteIds.length === 0}
-            className="px-0 py-0 text-[#737373] hover:text-[#FF3D00]"
+            className="px-0 py-0 text-[#8a8a8a] hover:text-[#FF3D00]"
           >
             CLEAR SELECTED
           </GhostButton>
@@ -1019,7 +1019,7 @@ export default function Tutor() {
           ) : availableNotes.length === 0 ? (
             <div className="p-8 border-b border-[#262626] flex flex-col items-center text-center">
               <h3 className="text-xl font-bold tracking-tighter mb-2">VOID.</h3>
-              <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+              <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                 NO NOTES AVAILABLE.
               </p>
             </div>
@@ -1039,7 +1039,7 @@ export default function Tutor() {
                         "w-4 h-4 border flex items-center justify-center shrink-0",
                         selected
                           ? "bg-[#FF3D00] border-[#FF3D00] text-[#FAFAFA]"
-                          : "border-[#737373] group-hover:border-[#0A0A0A]",
+                          : "border-[#8a8a8a] group-hover:border-[#0A0A0A]",
                       )}
                     >
                       {selected && <Check className="w-3 h-3" />}
@@ -1051,7 +1051,7 @@ export default function Tutor() {
                       )}>
                         {note.title}
                       </p>
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mt-1 truncate">
+                      <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mt-1 truncate">
                         {note.subject || "GENERAL"}
                       </p>
                     </div>

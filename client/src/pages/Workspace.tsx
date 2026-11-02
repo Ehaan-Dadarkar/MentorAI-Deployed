@@ -779,7 +779,7 @@ export default function Workspace() {
                   </p>
                   <button
                     onClick={() => setPdfTruncationNotice(null)}
-                    className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                    className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
                     aria-label="Dismiss"
                   >
                     <X className="w-4 h-4" />

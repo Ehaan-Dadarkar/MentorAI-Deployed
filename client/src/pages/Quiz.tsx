@@ -31,8 +31,8 @@ const DIFFICULTIES: QuizDifficulty[] = ["easy", "medium", "hard"];
 function getGrade(score: number) {
   if (score >= 90) return { letter: "A", color: "text-[#FAFAFA]" };
   if (score >= 80) return { letter: "B", color: "text-[#FAFAFA]" };
-  if (score >= 70) return { letter: "C", color: "text-[#737373]" };
-  if (score >= 60) return { letter: "D", color: "text-[#737373]" };
+  if (score >= 70) return { letter: "C", color: "text-[#8a8a8a]" };
+  if (score >= 60) return { letter: "D", color: "text-[#8a8a8a]" };
   return { letter: "F", color: "text-[#FF3D00]" };
 }
 
@@ -142,7 +142,7 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center justify-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase",
+      "text-label font-bold tracking-widest text-[#8a8a8a] uppercase",
       "hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       className,
@@ -407,7 +407,7 @@ export default function QuizPage() {
     <div className="space-y-6 sm:space-y-8 mt-6 sm:mt-8">
       {/* Data source */}
       <div className="space-y-3">
-        <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+        <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
           DATA SOURCE
         </label>
         <div className="flex flex-wrap gap-2">
@@ -416,10 +416,10 @@ export default function QuizPage() {
               key={key}
               onClick={() => setSourceMode(key)}
               className={cn(
-                "px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold tracking-widest border transition-all duration-300 uppercase",
+                "px-4 sm:px-6 py-3 sm:py-4 text-label font-bold tracking-widest border transition-all duration-300 uppercase",
                 sourceMode === key
                   ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                  : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                  : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
               )}
             >
               {key === "notes" ? "NOTES" : "FLASHCARDS"}
@@ -430,7 +430,7 @@ export default function QuizPage() {
 
       {sourceMode === "notes" && (
         <div className="space-y-3">
-          <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+          <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
             SELECT NOTE
           </label>
           <select
@@ -451,7 +451,7 @@ export default function QuizPage() {
 
       {sourceMode === "flashcards" && (
         <div className="space-y-3">
-          <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+          <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
             SELECT DECK
           </label>
           <select
@@ -471,7 +471,7 @@ export default function QuizPage() {
       )}
 
       <div className="space-y-3">
-        <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+        <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
           QUIZ DECK NAME
         </label>
         <input
@@ -482,7 +482,7 @@ export default function QuizPage() {
       </div>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+        <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
           TOPIC (OPTIONAL)
         </label>
         <input
@@ -493,7 +493,7 @@ export default function QuizPage() {
       </div>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+        <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
           QUESTIONS
         </label>
         <div className="flex flex-wrap gap-2">
@@ -501,10 +501,10 @@ export default function QuizPage() {
             <button
               key={value} onClick={() => setCount(value)}
               className={cn(
-                "px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold tracking-widest border transition-all duration-300",
+                "px-4 sm:px-6 py-3 sm:py-4 text-label font-bold tracking-widest border transition-all duration-300",
                 count === value
                   ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                  : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                  : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
               )}
             >
               {value}
@@ -514,7 +514,7 @@ export default function QuizPage() {
       </div>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-bold tracking-widest text-[#737373] uppercase block">
+        <label className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase block">
           DIFFICULTY
         </label>
         <div className="flex flex-wrap gap-2">
@@ -522,10 +522,10 @@ export default function QuizPage() {
             <button
               key={value} onClick={() => setDifficulty(value)}
               className={cn(
-                "px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold tracking-widest border transition-all duration-300 uppercase",
+                "px-4 sm:px-6 py-3 sm:py-4 text-label font-bold tracking-widest border transition-all duration-300 uppercase",
                 difficulty === value
                   ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                  : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                  : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
               )}
             >
               {value}
@@ -540,7 +540,7 @@ export default function QuizPage() {
           onChange={(e) => setCreateFlashcardDeck(e.target.checked)}
           className="h-5 w-5 appearance-none border border-[#262626] checked:bg-[#FAFAFA] checked:border-[#FAFAFA] relative after:content-[''] checked:after:absolute checked:after:bg-[#0A0A0A] checked:after:inset-1 transition-colors shrink-0"
         />
-        <span className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase">
+        <span className="text-label font-bold tracking-widest text-[#FAFAFA] uppercase">
           ALSO CREATE FLASHCARD DECK
         </span>
       </label>
@@ -551,7 +551,7 @@ export default function QuizPage() {
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }} className="overflow-hidden"
           >
-            <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 text-[10px] font-bold tracking-widest text-[#FF3D00] uppercase">
+            <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 text-label font-bold tracking-widest text-[#FF3D00] uppercase">
               [ ERROR ] {sourceError}
             </div>
           </motion.div>
@@ -590,7 +590,7 @@ export default function QuizPage() {
             <div className="flex justify-between items-start mb-4 border-b border-[#262626] pb-5 sm:pb-8">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
                     [ CREATION ]
                   </span>
                   <span className="h-px w-8 bg-[#262626]" />
@@ -601,7 +601,7 @@ export default function QuizPage() {
               </div>
               <button
                 onClick={() => setIsNewDeckModalOpen(false)}
-                className="text-[#737373] hover:text-[#FF3D00] transition-colors p-2"
+                className="text-[#8a8a8a] hover:text-[#FF3D00] transition-colors p-2"
               >
                 <XCircle className="w-6 h-6 sm:w-8 sm:h-8" />
               </button>
@@ -631,7 +631,7 @@ export default function QuizPage() {
             <motion.div key="library" variants={staggerContainer} initial="hidden" animate="show" className="flex flex-col gap-8 sm:gap-12">
               <motion.div variants={fadeUp} className="flex flex-col gap-4 border-b border-[#262626] pb-6 sm:pb-8">
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
                     [ EVALUATION ]
                   </span>
                   <span className="h-px w-8 bg-[#262626]" />
@@ -651,7 +651,7 @@ export default function QuizPage() {
                 <AnimatePresence>
                   {libraryError && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                      <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 text-[10px] font-bold tracking-widest text-[#FF3D00] uppercase">
+                      <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 text-label font-bold tracking-widest text-[#FF3D00] uppercase">
                         [ ERROR ] {libraryError}
                       </div>
                     </motion.div>
@@ -666,13 +666,13 @@ export default function QuizPage() {
                   </div>
                 ) : libraryCards.length === 0 ? (
                   <div className="border border-[#262626] bg-[#0A0A0A] p-8 sm:p-12 md:p-24 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 border border-[#262626] mb-6 sm:mb-8 flex items-center justify-center text-[#737373]">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 border border-[#262626] mb-6 sm:mb-8 flex items-center justify-center text-[#8a8a8a]">
                       <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
                     <h3 className="text-lg sm:text-xl font-black tracking-widest text-[#FAFAFA] uppercase mb-4">
                       NO DEPOSITORIES FOUND.
                     </h3>
-                    <p className="text-[10px] tracking-widest text-[#737373] uppercase mb-8 max-w-xs">
+                    <p className="text-label tracking-widest text-[#8a8a8a] uppercase mb-8 max-w-xs">
                       INITIALIZE YOUR FIRST QUIZ DECK FROM NOTES OR FLASHCARDS.
                     </p>
                     <PrimaryButton onClick={openNewDeckSetup}>
@@ -698,18 +698,18 @@ export default function QuizPage() {
                               <h3 className="text-sm sm:text-lg font-black tracking-widest uppercase truncate mb-2">
                                 {deck.deckName || `${deck.subject} QUIZ`}
                               </h3>
-                              <p className="text-[10px] tracking-widest text-[#737373] group-hover:text-[#0A0A0A]/70 uppercase truncate">
+                              <p className="text-label tracking-widest text-[#8a8a8a] group-hover:text-[#0A0A0A]/70 uppercase truncate">
                                 {deck.subject}
                               </p>
                             </div>
                             <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-[#262626] group-hover:border-[#0A0A0A]/20">
                               <span className={cn(
-                                "text-[10px] font-bold tracking-widest uppercase group-hover:text-[#0A0A0A]",
+                                "text-label font-bold tracking-widest uppercase group-hover:text-[#0A0A0A]",
                                 completed ? grade.color : "text-inherit",
                               )}>
                                 [{completed ? "DONE" : "PENDING"}]
                               </span>
-                              <span className="text-[10px] tracking-widest text-[#737373] group-hover:text-[#0A0A0A]/70 uppercase">
+                              <span className="text-label tracking-widest text-[#8a8a8a] group-hover:text-[#0A0A0A]/70 uppercase">
                                 {metrics.total} Qs
                               </span>
                             </div>
@@ -741,12 +741,12 @@ export default function QuizPage() {
                       <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter text-[#FAFAFA] uppercase leading-none mb-3">
                         {selectedDeckForDetail.deckName || `${selectedDeckForDetail.subject} QUIZ`}
                       </h2>
-                      <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+                      <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
                         SUBJECT: {selectedDeckForDetail.subject}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[10px] font-bold tracking-widest uppercase text-[#737373] border-t border-[#262626] pt-5 sm:pt-8">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-label font-bold tracking-widest uppercase text-[#8a8a8a] border-t border-[#262626] pt-5 sm:pt-8">
                       <span className={Boolean(selectedDeckForDetail.completedAt) ? getGrade(selectedDeckForDetail.score || 0).color : ""}>
                         STATUS: {Boolean(selectedDeckForDetail.completedAt) ? "COMPLETED" : "PENDING"}
                       </span>
@@ -763,7 +763,7 @@ export default function QuizPage() {
                           { label: "TIME", value: `${Math.floor((selectedDeckForDetail.timeTaken || 0) / 60)}M ${(selectedDeckForDetail.timeTaken || 0) % 60}S`, color: "text-[#FAFAFA]" },
                         ].map(({ label, value, color }) => (
                           <div key={label} className="border border-[#262626] bg-[#0A0A0A] p-4 sm:p-6 text-center">
-                            <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase mb-3">{label}</p>
+                            <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase mb-3">{label}</p>
                             <p className={cn("text-lg sm:text-2xl font-black", color)}>{value}</p>
                           </div>
                         ))}
@@ -797,13 +797,13 @@ export default function QuizPage() {
                                   : <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF3D00] mt-0.5 shrink-0" />
                                 }
                                 <div className="min-w-0">
-                                  <p className="text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase mb-1">
+                                  <p className="text-label font-bold tracking-widest text-[#FAFAFA] uppercase mb-1">
                                     [ Q{idx + 1} ]
                                   </p>
-                                  <p className="text-xs sm:text-sm text-[#737373] truncate">{row.question}</p>
+                                  <p className="text-xs sm:text-sm text-[#8a8a8a] truncate">{row.question}</p>
                                 </div>
                               </div>
-                              <ChevronDown className={cn("w-4 h-4 text-[#737373] transition-transform shrink-0", expandedRows[idx] && "rotate-180")} />
+                              <ChevronDown className={cn("w-4 h-4 text-[#8a8a8a] transition-transform shrink-0", expandedRows[idx] && "rotate-180")} />
                             </button>
                             <AnimatePresence>
                               {expandedRows[idx] && (
@@ -819,7 +819,7 @@ export default function QuizPage() {
                                         {row.options[row.correctIndex]}
                                       </div>
                                     )}
-                                    <p className="text-xs sm:text-sm text-[#737373] leading-relaxed italic border-l-2 border-[#262626] pl-4">
+                                    <p className="text-xs sm:text-sm text-[#8a8a8a] leading-relaxed italic border-l-2 border-[#262626] pl-4">
                                       {row.explanation}
                                     </p>
                                   </div>
@@ -842,7 +842,7 @@ export default function QuizPage() {
               <motion.div variants={fadeUp} className="flex flex-col gap-4 sm:gap-6">
                 <div className="flex items-center justify-between border-b border-[#262626] pb-4 sm:pb-6">
                   <div className="flex flex-col gap-2">
-                    <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+                    <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
                       Q {questionIndex + 1} / {currentQuiz.questions.length}
                     </p>
                     {/* Progress dots — scroll on mobile if many questions */}
@@ -861,7 +861,7 @@ export default function QuizPage() {
                   </div>
                   {/* Timer */}
                   <div className="flex items-center gap-2 sm:gap-3 border border-[#262626] px-3 py-1.5 sm:px-4 sm:py-2">
-                    <Clock3 className={cn("w-3 h-3 sm:w-4 sm:h-4", timeLeft < 10 ? "text-[#FF3D00]" : "text-[#737373]")} />
+                    <Clock3 className={cn("w-3 h-3 sm:w-4 sm:h-4", timeLeft < 10 ? "text-[#FF3D00]" : "text-[#8a8a8a]")} />
                     <span className={cn("text-xs font-black tracking-widest", timeLeft < 10 ? "text-[#FF3D00]" : "text-[#FAFAFA]")}>
                       {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
                     </span>
@@ -873,7 +873,7 @@ export default function QuizPage() {
                 {submitError && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                     <div className="border border-[#FF3D00] bg-[#FF3D00]/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                      <p className="flex-1 text-[10px] font-bold tracking-widest text-[#FF3D00] uppercase">[ ERROR ] {submitError}</p>
+                      <p className="flex-1 text-label font-bold tracking-widest text-[#FF3D00] uppercase">[ ERROR ] {submitError}</p>
                       <PrimaryButton onClick={() => void handleFinishQuiz()} disabled={isSubmitting} className="sm:w-auto">
                         {isSubmitting ? "PROCESSING..." : "RETRY SUBMIT"}
                       </PrimaryButton>
@@ -904,7 +904,7 @@ export default function QuizPage() {
                       if (isCorrectOption) buttonClass = "border border-[#FAFAFA] bg-[#FAFAFA] text-[#0A0A0A]";
                       else if (hasAnswerKey && isSelected) buttonClass = "border border-[#FF3D00] bg-transparent text-[#FF3D00]";
                       else if (isSelected) buttonClass = "border border-[#FAFAFA] bg-transparent text-[#FAFAFA]";
-                      else buttonClass = "border border-[#262626] bg-transparent text-[#737373] opacity-50";
+                      else buttonClass = "border border-[#262626] bg-transparent text-[#8a8a8a] opacity-50";
                     }
 
                     return (
@@ -939,7 +939,7 @@ export default function QuizPage() {
                       className="overflow-hidden mt-6 sm:mt-8"
                     >
                       <div className="border border-[#262626] p-4 sm:p-6 bg-[#FAFAFA]/5">
-                        <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase mb-3">[ ANALYSIS ]</p>
+                        <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase mb-3">[ ANALYSIS ]</p>
                         <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed italic">
                           {currentQuiz.questions[questionIndex].explanation}
                         </p>
@@ -980,7 +980,7 @@ export default function QuizPage() {
               </motion.div>
 
               <motion.div variants={fadeUp} className="border border-[#262626] bg-[#0A0A0A] p-8 sm:p-12 md:p-24 flex flex-col items-center text-center">
-                <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase mb-6 sm:mb-8">
+                <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase mb-6 sm:mb-8">
                   [ SCORE RECORDED ]
                 </p>
                 <h1 className="text-7xl sm:text-8xl md:text-9xl font-black text-[#FAFAFA] leading-none tracking-tighter mb-6 sm:mb-8">
@@ -992,7 +992,7 @@ export default function QuizPage() {
                 )}>
                   GRADE {getGrade(results.score).letter}
                 </div>
-                <p className="text-[10px] font-bold tracking-widest text-[#737373] uppercase">
+                <p className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase">
                   TIME: {Math.floor(results.timeTaken / 60)}M {results.timeTaken % 60}S
                 </p>
               </motion.div>
@@ -1013,11 +1013,11 @@ export default function QuizPage() {
                             ? <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#FAFAFA] shrink-0" />
                             : <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF3D00] shrink-0" />
                           }
-                          <p className="text-[10px] sm:text-xs font-bold tracking-widest text-[#FAFAFA] uppercase">
+                          <p className="text-label sm:text-xs font-bold tracking-widest text-[#FAFAFA] uppercase">
                             [ Q{idx + 1} ]
                           </p>
                         </div>
-                        <ChevronDown className={cn("w-4 h-4 text-[#737373] transition-transform shrink-0", expandedRows[idx] && "rotate-180")} />
+                        <ChevronDown className={cn("w-4 h-4 text-[#8a8a8a] transition-transform shrink-0", expandedRows[idx] && "rotate-180")} />
                       </button>
                       <AnimatePresence>
                         {expandedRows[idx] && (
@@ -1033,7 +1033,7 @@ export default function QuizPage() {
                                   {row.options[row.correctIndex]}
                                 </div>
                               )}
-                              <p className="text-xs sm:text-sm text-[#737373] leading-relaxed italic border-l-2 border-[#262626] pl-4">
+                              <p className="text-xs sm:text-sm text-[#8a8a8a] leading-relaxed italic border-l-2 border-[#262626] pl-4">
                                 {row.explanation}
                               </p>
                             </div>
@@ -1068,7 +1068,7 @@ export default function QuizPage() {
                             <p className="text-xs sm:text-sm font-bold tracking-widest text-[#FAFAFA] uppercase mb-1">
                               {topicName}
                             </p>
-                            <p className="text-[10px] tracking-widest text-[#FF3D00] uppercase">
+                            <p className="text-label tracking-widest text-[#FF3D00] uppercase">
                               [{misses} ERROR{(misses as number) > 1 ? "S" : ""}]
                             </p>
                           </div>

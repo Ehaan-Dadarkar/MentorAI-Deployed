@@ -70,7 +70,7 @@ export default function Credits() {
 
   useEffect(() => {
     fetchPacks();
-    fetchBalance();
+    fetchBalance(true);
     void fetchPending();
     if (handledReturn.current) return;
     handledReturn.current = true;
@@ -110,13 +110,13 @@ export default function Credits() {
         <h1 className="text-2xl font-black tracking-tight text-[#FAFAFA]">
           Credits
         </h1>
-        <p className="mt-2 text-sm text-[#737373]">
+        <p className="mt-2 text-sm text-[#8a8a8a]">
           PayPal sandbox only — no real money moves. Buy a pack, approve it
           on PayPal, and you return here for the capture.
         </p>
 
         <div className="mt-6 border border-[#262626] px-5 py-4 flex items-center justify-between">
-          <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#737373]">
+          <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#8a8a8a]">
             Your balance
           </span>
           <span className="text-xl font-black text-[#FAFAFA]">
@@ -131,7 +131,7 @@ export default function Credits() {
           </p>
         )}
 
-        <p className="mt-4 border border-[#262626] px-5 py-4 text-sm text-[#737373]">
+        <p className="mt-4 border border-[#262626] px-5 py-4 text-sm text-[#8a8a8a]">
           How credits work: if you have your own OpenRouter key, AI
           calls use it and never touch your balance. If you do not,
           each AI request spends 1 credit and runs on the shared key
@@ -155,7 +155,7 @@ export default function Credits() {
           </p>
         )}
         {isCapturing && (
-          <p className="mt-4 text-sm text-[#737373]">
+          <p className="mt-4 text-sm text-[#8a8a8a]">
             Capturing your payment…
           </p>
         )}
@@ -165,7 +165,7 @@ export default function Credits() {
             <p className="text-xs font-bold tracking-[0.2em] uppercase text-[#FF3D00]">
               Pending purchases
             </p>
-            <p className="mt-2 text-sm text-[#737373]">
+            <p className="mt-2 text-sm text-[#8a8a8a]">
               These payments were approved on PayPal but the capture did
               not complete — no credits were added yet. Retry the capture
               to finish; you will not be charged again.
@@ -184,7 +184,7 @@ export default function Credits() {
                       {purchase.credits} credits — ${purchase.amount}{" "}
                       {purchase.currency}
                     </p>
-                    <p className="text-xs text-[#737373]">
+                    <p className="text-xs text-[#8a8a8a]">
                       {purchase.packId} ·{" "}
                       {new Date(purchase.createdAt).toLocaleString()}
                     </p>
@@ -211,20 +211,20 @@ export default function Credits() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {isLoading && packs.length === 0 && (
-            <p className="text-sm text-[#737373]">Loading packs…</p>
+            <p className="text-sm text-[#8a8a8a]">Loading packs…</p>
           )}
           {packs.map((pack) => (
             <div
               key={pack.id}
               className="border border-[#262626] px-5 py-5 flex flex-col gap-3"
             >
-              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#737373]">
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#8a8a8a]">
                 {pack.label}
               </span>
               <span className="text-2xl font-black text-[#FAFAFA]">
                 {pack.credits} credits
               </span>
-              <span className="text-sm text-[#737373]">
+              <span className="text-sm text-[#8a8a8a]">
                 ${pack.amount} USD
               </span>
               <button

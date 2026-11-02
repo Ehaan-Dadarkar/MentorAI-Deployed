@@ -60,7 +60,7 @@ const GhostButton = ({
     initial="initial"
     onClick={onClick}
     className={cn(
-      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] transition-colors",
+      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FAFAFA] transition-colors",
       className,
     )}
   >
@@ -96,8 +96,8 @@ const ActionButton = ({
       className,
     )}
   >
-    <Icon className="w-5 h-5 sm:w-6 sm:h-6 mb-2 sm:mb-3 text-[#737373] group-hover:text-[#FAFAFA] transition-colors" />
-    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#FAFAFA] uppercase mb-1">
+    <Icon className="w-5 h-5 sm:w-6 sm:h-6 mb-2 sm:mb-3 text-[#8a8a8a] group-hover:text-[#FAFAFA] transition-colors" />
+    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#FAFAFA] uppercase mb-1">
       {label}
     </span>
     <span className="text-lg sm:text-xl font-bold tracking-tighter text-[#FAFAFA]">
@@ -188,7 +188,7 @@ export default function FlashcardStudy() {
     const pullWeakSuggestion = async () => {
       if (!sessionResults?.endedAt) return;
       if (deckId === "due") return;
-      if (guardOpenRouterAction()) return;
+      if (await guardOpenRouterAction()) return;
       await fetchWeakCards(deckId);
       const weak = useFlashcardStore.getState().weakCards;
       if (weak.length === 0) return;
@@ -276,7 +276,7 @@ export default function FlashcardStudy() {
               </h1>
               <div className="flex items-center gap-4 sm:gap-6">
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   COGNITIVE ASSIMILATION COMPLETE
                 </p>
               </div>
@@ -290,17 +290,17 @@ export default function FlashcardStudy() {
             >
               {/* ↓ consistent reduced padding on mobile */}
               <div className="border-b border-r border-[#262626] p-6 sm:p-8 md:p-12 bg-[#0A0A0A] flex flex-col justify-between min-h-50">
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4">
                   ACCURACY
                 </p>
                 {/* ↓ number scales from text-4xl */}
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FF3D00]">
                   {sessionResults.accuracy}
-                  <span className="text-xl sm:text-2xl text-[#737373] ml-1">%</span>
+                  <span className="text-xl sm:text-2xl text-[#8a8a8a] ml-1">%</span>
                 </p>
               </div>
               <div className="border-b border-r border-[#262626] p-6 sm:p-8 md:p-12 flex flex-col justify-between min-h-50">
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4">
                   CARDS REVIEWED
                 </p>
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">
@@ -308,12 +308,12 @@ export default function FlashcardStudy() {
                 </p>
               </div>
               <div className="border-b border-r border-[#262626] p-6 sm:p-8 md:p-12 flex flex-col justify-between min-h-50">
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4">
                   DURATION
                 </p>
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">
                   {durationMinutes}
-                  <span className="text-xl sm:text-2xl text-[#737373] ml-1">MIN</span>
+                  <span className="text-xl sm:text-2xl text-[#8a8a8a] ml-1">MIN</span>
                 </p>
               </div>
             </motion.div>
@@ -325,7 +325,7 @@ export default function FlashcardStudy() {
             >
               <div className="border-b border-r border-[#262626] p-5 sm:p-8 flex items-center justify-between bg-[#FAFAFA] text-[#0A0A0A]">
                 <div>
-                  <p className="text-[10px] font-bold tracking-[0.2em] text-[#0A0A0A]/60 uppercase mb-2">
+                  <p className="text-label font-bold tracking-[0.2em] text-[#0A0A0A]/60 uppercase mb-2">
                     PRIOR MASTERY
                   </p>
                   {/* ↓ scales from text-2xl */}
@@ -336,7 +336,7 @@ export default function FlashcardStudy() {
               </div>
               <div className="border-b border-r border-[#262626] p-5 sm:p-8 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-2">
+                  <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-2">
                     CURRENT MASTERY
                   </p>
                   <div className="flex items-center gap-3 sm:gap-4">
@@ -350,7 +350,7 @@ export default function FlashcardStudy() {
                     >
                       {sessionResults.masteryAfterAvg}%
                     </p>
-                    <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#737373]" />
+                    <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#8a8a8a]" />
                   </div>
                 </div>
               </div>
@@ -364,10 +364,10 @@ export default function FlashcardStudy() {
               {missedCards.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-5 sm:mb-8">
-                    <h2 className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                    <h2 className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                       NEEDS REINFORCEMENT
                     </h2>
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       {missedCards.length} ITEMS
                     </span>
                   </div>
@@ -386,16 +386,16 @@ export default function FlashcardStudy() {
               {/* AI Insight Column */}
               <div>
                 <div className="flex items-center justify-between mb-5 sm:mb-8">
-                  <h2 className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <h2 className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     AI SYNTHESIS
                   </h2>
-                  <BrainCircuit className="w-4 h-4 text-[#737373]" />
+                  <BrainCircuit className="w-4 h-4 text-[#8a8a8a]" />
                 </div>
 
                 {isFetchingWeak || isFetchingSuggestion ? (
                   <div className="border border-[#262626] p-6 sm:p-8 flex flex-col items-center justify-center min-h-75">
                     <div className="w-8 h-8 rounded-full border-t-2 border-[#FF3D00] animate-spin mb-4 sm:mb-6" />
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase animate-pulse text-center">
+                    <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase animate-pulse text-center">
                       EXTRACTING COGNITIVE WEAKNESSES...
                     </p>
                   </div>
@@ -407,7 +407,7 @@ export default function FlashcardStudy() {
                   </div>
                 ) : (
                   <div className="border border-[#262626] p-6 sm:p-8 flex items-center justify-center min-h-75 text-center">
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       INSUFFICIENT DATA FOR AI SYNTHESIS
                     </p>
                   </div>
@@ -457,7 +457,7 @@ export default function FlashcardStudy() {
           }}
         />
         <div className="w-12 h-12 rounded-full border-t-2 border-[#FF3D00] border-r-2 border-r-transparent animate-spin mb-8" />
-        <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase animate-pulse text-center">
+        <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase animate-pulse text-center">
           INITIALIZING COGNITIVE INTERFACE...
         </p>
       </div>
@@ -486,18 +486,18 @@ export default function FlashcardStudy() {
                 navigate(deckId === "due" ? "/flashcards" : `/flashcards/${deckId}`)
               }
               // ↓ bigger tap target on mobile
-              className="text-[#737373] hover:text-[#FF3D00] transition-colors p-1"
+              className="text-[#8a8a8a] hover:text-[#FF3D00] transition-colors p-1"
             >
               <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             {/* ↓ truncate long deck names on mobile */}
-            <h1 className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#FAFAFA] truncate max-w-[140px] sm:max-w-none">
+            <h1 className="text-label font-bold tracking-[0.2em] uppercase text-[#FAFAFA] truncate max-w-[140px] sm:max-w-none">
               {deckId === "due" ? "DUE CARDS" : currentDeck?.name || "ACTIVE SESSION"}
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase whitespace-nowrap">
+            <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase whitespace-nowrap">
               {/* ↓ show shorter label on mobile */}
               <span className="sm:hidden">
                 <span className="text-[#FF3D00]">{cardIndex + 1}</span>/{sessionCards.length}
@@ -543,12 +543,12 @@ export default function FlashcardStudy() {
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="border border-[#262626] px-2 sm:px-3 py-1 shrink-0">
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                       {currentCard.difficulty}
                     </span>
                   </div>
                   {/* ↓ context-aware flip hint: spacebar on desktop, tap on mobile */}
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase animate-pulse text-right">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase animate-pulse text-right">
                     <span className="hidden sm:inline">[ SPACEBAR TO FLIP ]</span>
                     <span className="sm:hidden">[ TAP TO FLIP ]</span>
                   </span>
@@ -572,7 +572,7 @@ export default function FlashcardStudy() {
                 {/* ↓ left offset responsive */}
                 <div className="absolute top-5 sm:top-8 left-5 sm:left-12 flex items-center gap-3 sm:gap-4">
                   <div className="h-1 w-6 sm:w-8 bg-[#FF3D00]" />
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#0A0A0A]/40 uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#0A0A0A]/40 uppercase">
                     ANSWER
                   </span>
                 </div>
@@ -601,7 +601,7 @@ export default function FlashcardStudy() {
                     onClick={() => void handleGrade("missed")}
                     className="group border border-[#262626] p-5 sm:p-8 bg-[#0A0A0A] hover:bg-[#FF3D00] hover:border-[#FF3D00] transition-colors flex flex-row sm:flex-col items-center sm:justify-center justify-between sm:text-center focus:outline-none focus:ring-1 focus:ring-[#FAFAFA]"
                   >
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-black uppercase sm:mb-3">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-black uppercase sm:mb-3">
                       [ KEY : 1 ]
                     </span>
                     <span className="text-xl sm:text-2xl font-bold tracking-tighter text-[#FAFAFA] group-hover:text-black">
@@ -613,7 +613,7 @@ export default function FlashcardStudy() {
                     onClick={() => void handleGrade("almost")}
                     className="group border border-[#262626] p-5 sm:p-8 bg-[#0A0A0A] hover:bg-[#FAFAFA] hover:border-[#FAFAFA] transition-colors flex flex-row sm:flex-col items-center sm:justify-center justify-between sm:text-center focus:outline-none focus:ring-1 focus:ring-[#FF3D00]"
                   >
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-black uppercase sm:mb-3">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-black uppercase sm:mb-3">
                       [ KEY : 2 ]
                     </span>
                     <span className="text-xl sm:text-2xl font-bold tracking-tighter text-[#FAFAFA] group-hover:text-black">
@@ -625,7 +625,7 @@ export default function FlashcardStudy() {
                     onClick={() => void handleGrade("got_it")}
                     className="group border border-[#262626] border-b-2 border-b-[#FF3D00] p-5 sm:p-8 bg-transparent hover:bg-[#262626] transition-colors flex flex-row sm:flex-col items-center sm:justify-center justify-between sm:text-center focus:outline-none focus:ring-1 focus:ring-[#FF3D00]"
                   >
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#FAFAFA] uppercase sm:mb-3">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#FAFAFA] uppercase sm:mb-3">
                       [ KEY : 3 ]
                     </span>
                     <span className="text-xl sm:text-2xl font-bold tracking-tighter text-[#FF3D00] group-hover:text-[#FF3D00]">

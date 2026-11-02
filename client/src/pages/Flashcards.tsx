@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import RateLimitBanner from "@/components/RateLimitBanner";
 import { guardOpenRouterAction } from "@/lib/apiKeyGate";
-import { useFlashcardStore } from "@/store/flashcardStore";
+import { useFlashcardStore, type DeckWithStats } from "@/store/flashcardStore";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +87,7 @@ const GhostButton = ({
     onClick={onClick}
     disabled={disabled}
     className={cn(
-      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors rounded-none shadow-none disabled:opacity-50 disabled:pointer-events-none",
+      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors rounded-none shadow-none disabled:opacity-50 disabled:pointer-events-none",
       className,
     )}
   >
@@ -114,7 +114,7 @@ const SecondaryButton = ({
     className={cn(
       "group relative inline-flex items-center justify-center gap-2",
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none rounded-none shadow-none",
@@ -167,7 +167,7 @@ function Modal({ open, onClose, children, title }: ModalProps) {
               </h3>
               <button
                 onClick={onClose}
-                className="text-[#737373] hover:text-[#FAFAFA] transition-colors"
+                className="text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -239,10 +239,33 @@ export default function Flashcards() {
     setError(null);
   };
 
-  const handleDeleteDeck = async (deckId: string, e: React.MouseEvent) => {
+  const [deckToDelete, setDeckToDelete] = useState<DeckWithStats | null>(null);
+  const [isDeletingDeck, setIsDeletingDeck] = useState(false);
+
+  const handleDeleteDeck = (deck: DeckWithStats, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteDeck(deckId);
-    await fetchDecks();
+    setDeckToDelete(deck);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeletingDeck) return;
+    setDeckToDelete(null);
+    setError(null);
+  };
+
+  const confirmDeleteDeck = async () => {
+    if (!deckToDelete || isDeletingDeck) return;
+    setIsDeletingDeck(true);
+    setError(null);
+    try {
+      await deleteDeck(deckToDelete._id);
+      setDeckToDelete(null);
+      await fetchDecks();
+    } catch {
+      setError("DELETION FAILED.");
+    } finally {
+      setIsDeletingDeck(false);
+    }
   };
 
   const handleOpenDeck = async (deckId: string) => {
@@ -272,7 +295,7 @@ export default function Flashcards() {
   };
 
   const handleGenerate = async () => {
-    if (guardOpenRouterAction()) return;
+    if (await guardOpenRouterAction()) return;
     setError(null);
     let text = "";
     if (tab === "paste") {
@@ -332,7 +355,7 @@ export default function Flashcards() {
               </motion.h1>
               <motion.div variants={fadeUp} className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   ACTIVE RECALL INVENTORY
                 </p>
               </motion.div>
@@ -373,7 +396,7 @@ export default function Flashcards() {
                   <h3 className="text-lg sm:text-xl font-bold tracking-tight text-[#FAFAFA] uppercase">
                     CARDS DUE TODAY
                   </h3>
-                  <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase mt-1">
+                  <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mt-1">
                     MAINTAIN SYNAPTIC STREAK
                   </p>
                 </div>
@@ -410,7 +433,7 @@ export default function Flashcards() {
               <span className="hidden sm:inline"> CREATE DECK</span>
             </GhostButton>
             <div className="h-[1px] w-4 sm:w-8 bg-[#262626]" />
-            <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+            <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
               {decks.length.toString().padStart(2, "0")}
               <span className="hidden sm:inline"> TOTAL</span>
             </span>
@@ -430,7 +453,7 @@ export default function Flashcards() {
               <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
                 VOID.
               </h3>
-              <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+              <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">
                 NO DECKS ESTABLISHED YET.
               </p>
               <PrimaryButton onClick={() => setShowCreateDeck(true)}>
@@ -455,12 +478,12 @@ export default function Flashcards() {
 
                   <div className="relative z-10 flex-1 flex flex-col transition-colors duration-500 group-hover:text-[#0A0A0A]">
                     <div className="flex justify-between items-start mb-4 sm:mb-6">
-                      <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#737373] group-hover:text-[#0A0A0A]/60">
+                      <span className="text-label font-bold tracking-[0.2em] uppercase text-[#8a8a8a] group-hover:text-[#0A0A0A]/60">
                         {deck.subject || "GENERAL"}
                       </span>
                       <button
-                        onClick={(e) => handleDeleteDeck(deck._id, e)}
-                        className="text-[#737373] hover:text-[#FF3D00] group-hover:text-[#0A0A0A]/40 group-hover:hover:text-[#FF3D00] transition-colors p-0 bg-transparent border-none"
+                        onClick={(e) => handleDeleteDeck(deck, e)}
+                        className="text-[#8a8a8a] hover:text-[#FF3D00] group-hover:text-[#0A0A0A]/40 group-hover:hover:text-[#FF3D00] transition-colors p-0 bg-transparent border-none"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -491,7 +514,7 @@ export default function Flashcards() {
         >
           <div className="space-y-6 sm:space-y-8">
             <div>
-              <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+              <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                 DECK NOMENCLATURE
               </label>
               <input
@@ -502,7 +525,7 @@ export default function Flashcards() {
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+              <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                 CLASSIFICATION SUBJECT
               </label>
               <input
@@ -528,6 +551,46 @@ export default function Flashcards() {
           </div>
         </Modal>
 
+        {/* ── DELETE DECK CONFIRM ── */}
+        <Modal
+          open={deckToDelete !== null}
+          onClose={closeDeleteModal}
+          title="DELETE DECK"
+        >
+          <div className="space-y-6 sm:space-y-8">
+            <p className="text-sm text-[#FAFAFA] uppercase tracking-[0.1em] leading-6">
+              PERMANENTLY DELETE{" "}
+              <span className="text-[#FF3D00] font-bold">
+                {deckToDelete?.name}
+              </span>
+              ?
+            </p>
+            <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase leading-5">
+              THIS ACTION IS IRREVERSIBLE.{" "}
+              {typeof deckToDelete?.stats?.totalCards === "number"
+                ? `${deckToDelete.stats.totalCards} CARD${deckToDelete.stats.totalCards === 1 ? "" : "S"} WILL BE DESTROYED.`
+                : "ALL CARDS IN THIS DECK WILL BE DESTROYED."}
+            </p>
+            {error && (
+              <p className="text-xs font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                ERROR: {error}
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-4 pt-4 sm:pt-6 border-t border-[#262626]">
+              <GhostButton onClick={closeDeleteModal} disabled={isDeletingDeck}>
+                CANCEL
+              </GhostButton>
+              <button
+                onClick={() => void confirmDeleteDeck()}
+                disabled={isDeletingDeck}
+                className="group relative inline-flex items-center justify-center gap-2 border border-[#FF3D00] bg-transparent px-4 sm:px-6 py-3 sm:py-4 text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase transition-all duration-300 hover:bg-[#FF3D00] hover:text-[#0A0A0A] disabled:opacity-50 disabled:pointer-events-none rounded-none shadow-none"
+              >
+                {isDeletingDeck ? "DELETING..." : "DELETE"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+
         {/* ── GENERATE MODAL ── */}
         <Modal
           open={showGenerate}
@@ -540,7 +603,7 @@ export default function Flashcards() {
                 <p className="text-base sm:text-lg font-bold tracking-tight text-[#FF3D00] uppercase mb-2">
                   {generatedPreview.length} CARDS GENERATED
                 </p>
-                <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   INTEGRATED INTO DATASTORE.
                 </p>
               </div>
@@ -549,7 +612,7 @@ export default function Flashcards() {
                 {generatedPreview.map((card, idx) => (
                   <div key={idx} className="border border-[#262626] p-4 sm:p-6">
                     <div className="mb-3 sm:mb-4">
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] mb-2 uppercase">
+                      <p className="text-label font-bold tracking-[0.2em] text-[#FF3D00] mb-2 uppercase">
                         QUERY
                       </p>
                       <p className="text-xs sm:text-sm text-[#FAFAFA] leading-relaxed">
@@ -558,10 +621,10 @@ export default function Flashcards() {
                     </div>
                     <div className="h-[1px] w-full bg-[#262626] mb-3 sm:mb-4" />
                     <div>
-                      <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] mb-2 uppercase">
+                      <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] mb-2 uppercase">
                         ANSWER
                       </p>
-                      <p className="text-xs sm:text-sm text-[#737373] leading-relaxed">
+                      <p className="text-xs sm:text-sm text-[#8a8a8a] leading-relaxed">
                         {card.answer}
                       </p>
                     </div>
@@ -583,7 +646,7 @@ export default function Flashcards() {
                   onClick={() => setTab("paste")}
                   className={cn(
                     "px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold tracking-[0.2em] uppercase transition-colors relative bg-transparent border-none",
-                    tab === "paste" ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
+                    tab === "paste" ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA]",
                   )}
                 >
                   RAW TEXT
@@ -598,7 +661,7 @@ export default function Flashcards() {
                   onClick={() => setTab("notes")}
                   className={cn(
                     "px-4 sm:px-6 py-3 sm:py-4 text-xs font-bold tracking-[0.2em] uppercase transition-colors relative bg-transparent border-none",
-                    tab === "notes" ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA]",
+                    tab === "notes" ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA]",
                   )}
                 >
                   FROM ARCHIVES
@@ -613,7 +676,7 @@ export default function Flashcards() {
 
               {tab === "paste" ? (
                 <div>
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                     SOURCE MATERIAL
                   </label>
                   <textarea
@@ -625,13 +688,13 @@ export default function Flashcards() {
                 </div>
               ) : (
                 <div>
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                     SELECT ARCHIVED NOTE
                   </label>
                   <div className="max-h-[220px] sm:max-h-[300px] overflow-y-auto border border-[#262626]">
                     {notesForGeneration.length === 0 ? (
                       <div className="p-6 sm:p-8 text-center">
-                        <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+                        <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                           NO ARCHIVES FOUND.
                         </p>
                       </div>
@@ -654,8 +717,8 @@ export default function Flashcards() {
                             {note.title}
                           </p>
                           <p className={cn(
-                            "text-[10px] font-bold tracking-[0.2em] uppercase mt-1",
-                            selectedNoteId === note._id ? "text-[#0A0A0A]/60" : "text-[#737373]",
+                            "text-label font-bold tracking-[0.2em] uppercase mt-1",
+                            selectedNoteId === note._id ? "text-[#0A0A0A]/60" : "text-[#8a8a8a]",
                           )}>
                             {note.subject || "GENERAL"}
                           </p>
@@ -669,7 +732,7 @@ export default function Flashcards() {
               {/* Classification + Deck — stacked on mobile, 2-col on sm+ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8">
                 <div>
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                     CLASSIFICATION
                   </label>
                   <input
@@ -680,7 +743,7 @@ export default function Flashcards() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
                     DESTINATION DECK
                   </label>
                   <select

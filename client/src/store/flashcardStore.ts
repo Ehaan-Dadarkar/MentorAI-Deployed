@@ -274,6 +274,9 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
 
   reviewCard: async (cardId, grade) => {
     const priorCard = get().sessionCards.find((c) => c._id === cardId);
+    // Snapshot for rollback: the optimistic update below must be
+    // reverted if the review request fails (M9).
+    const priorResults = get().sessionResults;
 
     set((state) => ({
       sessionResults: state.sessionResults
@@ -336,6 +339,9 @@ export const useFlashcardStore = create<FlashcardState>((set, get) => ({
 
       return updatedCard;
     } catch (error: any) {
+      // Roll back the optimistic session-stats update: a failed review
+      // (402, network error, 5xx) must not inflate displayed accuracy.
+      set({ sessionResults: priorResults });
       if (error?.response?.status === 402) {
         openApiKeyGate(true);
       }

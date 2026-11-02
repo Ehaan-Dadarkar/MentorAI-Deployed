@@ -5,7 +5,10 @@ const { z } = require("zod");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { dynamicAiLimiter } = require("../middleware/rateLimiter");
-const { generateFlashcards } = require("../services/ai");
+const {
+  generateFlashcards,
+  postWithProviderRetries,
+} = require("../services/ai");
 const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { recordUsage, normalizeUsage, usageCallbackFor } = require("../services/usage");
 const { buildMessagesSnapshot } = require("../services/tutorSnapshot");
@@ -39,7 +42,11 @@ const chatSchema = z.object({
       }),
     )
     .min(1)
-    .max(50),
+    // H1: accept long threads. The prompt itself is windowed to the
+    // last 10 messages below, so a longer accepted history never
+    // changes what the provider sees - it just stops a long
+    // conversation from 400ing from turn 26 on.
+    .max(200),
   context: z.string().max(12000).optional(),
   noteContext: z.string().max(12000).optional(),
   activeSessionId: z.string().optional(),
@@ -204,6 +211,15 @@ function createTokenTracker(model, mode) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// --------------------------------------------------------------
+// H3: a tutor stream that ends or errors having delivered zero
+// token SSE events delivered no answer, so the up-front credit
+// spend is refunded - the same "no result -> refund" rule the
+// non-streaming routes apply via refundCreditSpend
+// (e.g. /generate-flashcards below).
+// --------------------------------------------------------------
+const shouldRefundStreamSpend = (tokensDelivered) => tokensDelivered === 0;
+
 // POST /api/tutor/chat  —  OpenRouter Streaming
 // ══════════════════════════════════════════════════════════════
 router.post(
@@ -254,19 +270,27 @@ router.post(
 
       const tokenTracker = createTokenTracker(TUTOR_MODEL, mode);
 
-      const streamResponse = await axios.post(
-        `${OPENROUTER_BASE_URL}/chat/completions`,
-        openRouterPayload,
-        {
-          responseType: "stream",
-          timeout: 60000,
-          headers: {
-            Authorization: `Bearer ${access.apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
-            "X-Title": "Mentorai Learning App",
+      // Pipeline item 1: same 429/5xx retry policy as the non-streaming
+      // paths (postWithProviderRetries from services/ai). Nothing has
+      // been delivered when the initial POST fails, so the retry
+      // carries the same no-double-charge calculus; timeouts and
+      // connection drops still fail fast and fall through to the
+      // zero-token refund below (H3).
+      const streamResponse = await postWithProviderRetries(() =>
+        axios.post(
+          `${OPENROUTER_BASE_URL}/chat/completions`,
+          openRouterPayload,
+          {
+            responseType: "stream",
+            timeout: 60000,
+            headers: {
+              Authorization: `Bearer ${access.apiKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": process.env.CLIENT_URL || "http://localhost:5173",
+              "X-Title": "Mentorai Learning App",
+            },
           },
-        },
+        ),
       );
 
       let buffer = "";
@@ -274,13 +298,45 @@ router.post(
       let fullResponse = "";
       let sentLength = 0;
       let closed = false;
+      // H3: count of token SSE events actually written to the client.
+      // Zero delivered tokens = no answer delivered -> refund the spend.
+      let tokensDelivered = 0;
+      // Pipeline item 8: usage must be recorded exactly once, even
+      // when the stream errors or the client disconnects.
+      let usageFlushed = false;
+
+      // Pipeline item 8: record the provider usage exactly once. The
+      // provider was called and the credit was spent, so the ledger
+      // must say so even when the stream dies or the client leaves.
+      const flushStreamUsage = async () => {
+        if (usageFlushed) return;
+        usageFlushed = true;
+        if (streamUsage) {
+          await recordUsage({
+            ...normalizeUsage(streamUsage, TUTOR_MODEL),
+            provider: "openrouter",
+            userId: req.userId,
+            feature: "tutor-chat",
+          });
+        }
+      };
 
       // ✅ Flag: socratic mode locked after first question — stop streaming
       //    tokens to client but keep reading stream so "end" fires normally
       let socraticLocked = false;
 
-      req.on("close", () => {
+      req.on("close", async () => {
         closed = true;
+        // Pipeline item 8: usage is recorded even on mid-stream
+        // disconnect. Both calls below are no-ops when there is
+        // nothing left to do (flush is once-only; the refund clears
+        // req.creditSpend on first use).
+        await flushStreamUsage();
+        // H3: disconnected before any token arrived (e.g. watchdog
+        // abort on a hung provider) - no answer was delivered.
+        if (shouldRefundStreamSpend(tokensDelivered)) {
+          await refundCreditSpend(req);
+        }
         if (streamResponse?.data && !streamResponse.data.destroyed) {
           streamResponse.data.destroy();
         }
@@ -328,6 +384,7 @@ router.post(
                     res.write(
                       `event: token\ndata: ${JSON.stringify({ token })}\n\n`,
                     );
+                    tokensDelivered += 1;
                   }
                 } else {
                   // No question mark yet — keep streaming to client
@@ -337,6 +394,7 @@ router.post(
                     res.write(
                       `event: token\ndata: ${JSON.stringify({ token })}\n\n`,
                     );
+                    tokensDelivered += 1;
                   }
                 }
               }
@@ -355,6 +413,7 @@ router.post(
               const token = visibleTarget.slice(sentLength);
               sentLength = visibleTarget.length;
               res.write(`event: token\ndata: ${JSON.stringify({ token })}\n\n`);
+              tokensDelivered += 1;
             }
           } catch {
             // Ignore malformed SSE chunks
@@ -364,17 +423,17 @@ router.post(
 
       // ✅ "end" always fires now — no stream.destroy() called
       streamResponse.data.on("end", async () => {
+        // Pipeline item 8: record usage even if the client already left.
+        await flushStreamUsage();
         if (closed) return;
 
-        tokenTracker.log();
-        if (streamUsage) {
-          await recordUsage({
-            ...normalizeUsage(streamUsage, TUTOR_MODEL),
-            provider: "openrouter",
-            userId: req.userId,
-            feature: "tutor-chat",
-          });
+        // H3: the provider answered (or died quietly) but no token
+        // ever reached the client - no result was delivered.
+        if (shouldRefundStreamSpend(tokensDelivered)) {
+          await refundCreditSpend(req);
         }
+
+        tokenTracker.log();
 
         const { content, followUps } = parseFollowUps(fullResponse);
         const safeContent = content || "(No response generated)";
@@ -451,9 +510,17 @@ router.post(
         res.end();
       });
 
-      streamResponse.data.on("error", (streamError) => {
+      streamResponse.data.on("error", async (streamError) => {
         if (closed) return;
         console.error("Tutor stream error:", streamError);
+        // Pipeline item 8: the provider was called, so the ledger gets
+        // its row even though the stream died.
+        await flushStreamUsage();
+        // H3: failed before/without delivering any token - no answer
+        // was delivered, so the up-front spend goes back.
+        if (shouldRefundStreamSpend(tokensDelivered)) {
+          await refundCreditSpend(req);
+        }
         res.write(
           `event: error\ndata: ${JSON.stringify({
             error: "Streaming failed",
@@ -465,8 +532,16 @@ router.post(
       if (!res.headersSent) {
         return next(error);
       }
+      // H3: the initial provider POST (with retries) failed before any
+      // token reached the client - headers are already sent, so the
+      // error goes out as an SSE event and the spend is refunded.
+      // Mirrors the non-streaming refund call-sites
+      // (e.g. /generate-flashcards).
+      await refundCreditSpend(req);
+      // Generic message: raw provider/axios errors are not leaked to
+      // the client (same policy as the non-streaming AI paths).
       res.write(
-        `event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`,
+        `event: error\ndata: ${JSON.stringify({ error: "Streaming failed" })}\n\n`,
       );
       res.end();
     }
@@ -706,5 +781,9 @@ router.post(
     }
   },
 );
+
+// Exposed for regression tests only; mounting is unaffected.
+router.chatSchema = chatSchema;
+router.shouldRefundStreamSpend = shouldRefundStreamSpend;
 
 module.exports = router;

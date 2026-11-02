@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useApiKeyModalStore } from "@/store/apiKeyModalStore";
+import { useCreditsStore } from "@/store/creditsStore";
 
 interface ApiKeyGateModalProps {
   ignoreSessionStorage?: boolean;
@@ -13,6 +14,7 @@ export default function ApiKeyGateModal({
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
+  const { balance } = useCreditsStore();
   const { isOpen, ignoreSessionStorage: storeIgnoreSessionStorage, close } =
     useApiKeyModalStore();
   const [isDismissed, setIsDismissed] = useState(() =>
@@ -44,6 +46,11 @@ export default function ApiKeyGateModal({
     navigate("/settings");
   };
 
+  const handleBuyCredits = () => {
+    close();
+    navigate("/credits");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/95 px-4">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,61,0,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]" />
@@ -52,12 +59,19 @@ export default function ApiKeyGateModal({
           <h2 className="text-3xl font-bold tracking-tighter leading-none uppercase text-[#FAFAFA] sm:text-5xl">
             ACTION REQUIRED
           </h2>
-          <div className="max-w-lg space-y-4 text-[11px] font-bold leading-6 tracking-[0.16em] text-[#737373] uppercase sm:text-sm">
+          <div className="max-w-lg space-y-4 text-label font-bold leading-6 tracking-[0.16em] text-[#8a8a8a] uppercase sm:text-sm">
             <p>
-              AI FEATURES ARE DISABLED UNTIL YOU ADD YOUR OPENROUTER API KEY.
-              THIS INCLUDES THE AI TUTOR, FLASHCARD GENERATION, QUIZ GENERATION,
-              NOTE SUMMARIZATION, VOICE RECALL, AND KNOWLEDGE GRAPH.
+              AI FEATURES ARE DISABLED UNTIL YOU ADD YOUR OPENROUTER API KEY
+              OR BUY CREDITS. THIS INCLUDES THE AI TUTOR, FLASHCARD
+              GENERATION, QUIZ GENERATION, NOTE SUMMARIZATION, VOICE RECALL,
+              AND THE AI-ENHANCED KNOWLEDGE GRAPH.
             </p>
+            {typeof balance === "number" && (
+              <p className="text-[#FAFAFA]">
+                CURRENT CREDIT BALANCE: {balance} — EACH AI ACTION COSTS 1
+                CREDIT.
+              </p>
+            )}
             <p>
               GET A FREE KEY AT{" "}
               <a
@@ -77,6 +91,13 @@ export default function ApiKeyGateModal({
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
           <button
             type="button"
+            onClick={handleBuyCredits}
+            className="inline-flex items-center justify-center border border-[#FF3D00] bg-[#FF3D00] px-5 py-3 text-xs font-bold tracking-[0.2em] text-[#0A0A0A] uppercase transition-colors hover:bg-[#FF3D00]/80"
+          >
+            BUY CREDITS WITH PAYPAL
+          </button>
+          <button
+            type="button"
             onClick={handleNavigateToSettings}
             className="inline-flex items-center justify-center border border-[#FF3D00] bg-transparent px-5 py-3 text-xs font-bold tracking-[0.2em] text-[#FAFAFA] uppercase transition-colors hover:bg-[#FF3D00]/10"
           >
@@ -85,7 +106,7 @@ export default function ApiKeyGateModal({
           <button
             type="button"
             onClick={dismissForSession}
-            className="inline-flex items-center justify-center px-1 py-3 text-xs font-bold tracking-[0.2em] text-[#737373] uppercase transition-colors hover:text-[#FAFAFA] self-start"
+            className="inline-flex items-center justify-center px-1 py-3 text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase transition-colors hover:text-[#FAFAFA] self-start"
           >
             I&apos;LL DO IT LATER
           </button>

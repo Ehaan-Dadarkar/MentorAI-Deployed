@@ -555,7 +555,13 @@ if (process.env.NODE_ENV !== "production") {
     }
   };
 
+  // Pipeline item 1: the 429/5xx retry helper behind callOpenRouter,
+  // exported so routes with bespoke provider calls (e.g. the tutor
+  // SSE stream in routes/tutor.js) can reuse the same bounded retry
+  // policy instead of reimplementing it.
   module.exports = {
+    postWithProviderRetries,
+    isRetryableProviderError,
     callOllama,
     callOpenRouter,
     tutorChat,

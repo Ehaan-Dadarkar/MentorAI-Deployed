@@ -72,7 +72,7 @@ const GhostButton = ({
     className={cn(
       "group relative inline-flex items-center gap-2 overflow-hidden",
       "bg-transparent px-4 py-3",
-      "text-[10px] font-bold tracking-widest text-[#737373] uppercase",
+      "text-label font-bold tracking-widest text-[#8a8a8a] uppercase",
       "hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors disabled:opacity-50 disabled:pointer-events-none",
       className
     )}
@@ -99,7 +99,7 @@ const SecondaryButton = ({
     className={cn(
       "group relative inline-flex items-center justify-center gap-2",
       "border border-[#262626] bg-[#0A0A0A] px-4 sm:px-6 py-3 sm:py-4",
-      "text-[10px] font-bold tracking-widest text-[#FAFAFA] uppercase",
+      "text-label font-bold tracking-widest text-[#FAFAFA] uppercase",
       "transition-all duration-300",
       "hover:bg-[#FAFAFA] hover:text-[#0A0A0A] hover:border-[#FAFAFA]",
       "disabled:opacity-50 disabled:pointer-events-none",
@@ -155,7 +155,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - score / 100);
-  const color = score >= 60 ? "#FF3D00" : "#737373";
+  const color = score >= 60 ? "#FF3D00" : "#8a8a8a";
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -173,7 +173,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
           className="text-3xl font-bold tracking-tighter"
-          style={{ color: score >= 60 ? "#FAFAFA" : "#737373" }}
+          style={{ color: score >= 60 ? "#FAFAFA" : "#8a8a8a" }}
         >
           {score.toString().padStart(2, "0")}
         </span>
@@ -214,7 +214,7 @@ function CountdownTimer({ secondsLeft, total }: { secondsLeft: number; total: nu
         />
       </svg>
       <span
-        className={cn("absolute text-[10px] font-bold tracking-tighter tabular-nums", isUrgent && "text-[#FF3D00]")}
+        className={cn("absolute text-label font-bold tracking-tighter tabular-nums", isUrgent && "text-[#FF3D00]")}
         style={{ color }}
       >
         {secondsLeft.toString().padStart(2, "0")}
@@ -245,7 +245,7 @@ function SetupScreen() {
 
   const handleStart = async () => {
     if (!selectedNoteId) return;
-    if (guardOpenRouterAction()) return;
+    if (await guardOpenRouterAction()) return;
     await startSession();
   };
 
@@ -259,17 +259,17 @@ function SetupScreen() {
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
               <h2 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">1. SELECT SOURCE</h2>
               <div className="h-[1px] flex-1 bg-[#262626]" />
-              <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+              <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                 {notes.length.toString().padStart(2, "0")} NOTES
               </span>
             </div>
 
             <div className="mb-5 sm:mb-6">
-              <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 block">
+              <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 block">
                 SEARCH KNOWLEDGE BASE
               </label>
               <div className="relative">
-                <Search className="absolute left-0 top-0 mt-3 w-4 h-4 text-[#737373]" />
+                <Search className="absolute left-0 top-0 mt-3 w-4 h-4 text-[#8a8a8a]" />
                 <input
                   placeholder="FILTER BY TITLE OR SUBJECT..."
                   value={searchQuery}
@@ -288,7 +288,7 @@ function SetupScreen() {
             ) : filteredNotes.length === 0 ? (
               <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
                 <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">VOID.</h3>
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">
                   NO KNOWLEDGE BASE FOUND.
                 </p>
                 <SecondaryButton onClick={() => navigate("/workspace")}>
@@ -311,7 +311,7 @@ function SetupScreen() {
                     )}
                     <div className={cn(
                       "relative z-10 flex-1 flex flex-col transition-colors duration-500",
-                      selectedNoteId === note._id ? "text-[#FAFAFA]" : "group-hover:text-[#0A0A0A] text-[#737373]"
+                      selectedNoteId === note._id ? "text-[#FAFAFA]" : "group-hover:text-[#0A0A0A] text-[#8a8a8a]"
                     )}>
                       <h4 className={cn(
                         "text-base sm:text-lg font-bold tracking-tight mb-2 uppercase line-clamp-2",
@@ -339,7 +339,7 @@ function SetupScreen() {
               <div className="h-[1px] flex-1 bg-[#262626]" />
             </div>
 
-            <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 block">
+            <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 block">
               QUESTIONS COUNT
             </label>
             <div className="grid grid-cols-4 border-t border-l border-[#262626] mb-8 sm:mb-12">
@@ -351,7 +351,7 @@ function SetupScreen() {
                     "border-b border-r border-[#262626] p-3 sm:p-4 text-center text-base sm:text-lg font-bold tracking-tighter transition-colors",
                     questionCount === count
                       ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                      : "bg-[#0A0A0A] text-[#737373] hover:text-[#FAFAFA]"
+                      : "bg-[#0A0A0A] text-[#8a8a8a] hover:text-[#FAFAFA]"
                   )}
                 >
                   {count}
@@ -361,7 +361,7 @@ function SetupScreen() {
 
             <div className="border border-[#262626] p-4 sm:p-6 mb-6 sm:mb-8">
               <Mic className="w-5 h-5 text-[#FF3D00] mb-3 sm:mb-4" />
-              <p className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase leading-relaxed">
+              <p className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase leading-relaxed">
                 MICROPHONE STREAM REQUIRED.<br />
                 SPEAK CLEARLY.<br />
                 NO HESITATION.
@@ -406,6 +406,7 @@ function SessionScreen() {
     isEvaluating,
     submitAnswer,
     skipQuestion,
+    questionSource,
   } = useVoiceRecallStore();
 
   const [isRecording, setIsRecording] = useState(false);
@@ -608,7 +609,7 @@ function SessionScreen() {
           className="flex items-center justify-between gap-4 border-b border-[#262626] pb-5 sm:pb-6"
         >
           <div className="flex-1 min-w-0">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block mb-2">
+            <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block mb-2">
               <span className="sm:hidden">Q {currentQuestionIndex + 1}/{questions.length}</span>
               <span className="hidden sm:inline">PROGRESS {currentQuestionIndex + 1} OF {questions.length}</span>
             </span>
@@ -642,20 +643,25 @@ function SessionScreen() {
             {currentQuestion.question}
           </h2>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6 border-t border-[#262626] pt-4 sm:pt-6">
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#737373]">
+            <span className="text-label font-bold tracking-[0.2em] uppercase text-[#8a8a8a]">
               DIFFICULTY: <span className="text-[#FAFAFA] ml-1">{currentQuestion.difficulty}</span>
             </span>
+            {questionSource?.truncated && (
+              <span className="text-label font-bold tracking-[0.2em] uppercase text-[#8a8a8a]">
+                QUESTIONS GENERATED FROM THE FIRST {questionSource.usedChars.toLocaleString()} OF {questionSource.totalChars.toLocaleString()} CHARACTERS
+              </span>
+            )}
           </div>
         </motion.div>
 
         {transcriptionError && (
-          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-[10px] font-bold tracking-[0.2em] uppercase">
+          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-label font-bold tracking-[0.2em] uppercase">
             {transcriptionError}
           </div>
         )}
 
         {micError && (
-          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-[10px] font-bold tracking-[0.2em] uppercase">
+          <div className="border border-[#FF3D00] p-4 text-center text-[#FF3D00] text-label font-bold tracking-[0.2em] uppercase">
             {micError}
           </div>
         )}
@@ -673,13 +679,13 @@ function SessionScreen() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#262626] bg-[#111111]">
                 <div className="flex items-center gap-2">
                   <span className="w-[6px] h-[6px] rounded-full bg-[#FF3D00]" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#737373]">
+                  <span className="text-label font-bold uppercase tracking-[0.2em] text-[#8a8a8a]">
                     TRANSCRIPT DATA
                   </span>
                 </div>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="flex items-center gap-1 text-[10px] font-bold tracking-widest text-[#737373] hover:text-[#FF3D00] uppercase transition-colors"
+                  className="flex items-center gap-1 text-label font-bold tracking-widest text-[#8a8a8a] hover:text-[#FF3D00] uppercase transition-colors"
                 >
                   <Pencil className="w-3 h-3" />
                   {isEditing ? "LOCK" : "EDIT"}
@@ -732,11 +738,11 @@ function SessionScreen() {
                   disabled={isEvaluating}
                   className="group flex flex-col items-start gap-1 disabled:opacity-30 disabled:pointer-events-none"
                 >
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#FAFAFA] uppercase transition-colors leading-none">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#FAFAFA] uppercase transition-colors leading-none">
                     <span className="sm:hidden">SKIP</span>
                     <span className="hidden sm:inline">I DON'T KNOW</span>
                   </span>
-                  <span className="h-[1px] w-0 group-hover:w-full bg-[#737373] transition-all duration-300" />
+                  <span className="h-[1px] w-0 group-hover:w-full bg-[#8a8a8a] transition-all duration-300" />
                 </button>
               </div>
 
@@ -779,7 +785,7 @@ function SessionScreen() {
                       isRecording
                         ? "bg-[#FF3D00] border-[#FF3D00] text-[#0A0A0A]"
                         : isTranscribing
-                        ? "bg-[#0A0A0A] border-[#262626] text-[#737373] cursor-not-allowed"
+                        ? "bg-[#0A0A0A] border-[#262626] text-[#8a8a8a] cursor-not-allowed"
                         : "bg-[#FAFAFA] border-[#FAFAFA] text-[#0A0A0A] hover:bg-[#FF3D00] hover:border-[#FF3D00] hover:text-[#FAFAFA]",
                       "disabled:opacity-50 disabled:pointer-events-none"
                     )}
@@ -803,12 +809,12 @@ function SessionScreen() {
                   className="group flex flex-col items-end gap-1 disabled:opacity-30 disabled:pointer-events-none"
                 >
                   {isEvaluating ? (
-                    <span className="flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                    <span className="flex items-center gap-2 text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                       <RotateCw className="w-3 h-3 animate-spin" />
                       <span className="hidden sm:inline">EVALUATING...</span>
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] group-hover:text-[#FAFAFA] uppercase transition-colors leading-none">
+                    <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] group-hover:text-[#FAFAFA] uppercase transition-colors leading-none">
                       <span className="sm:hidden">SUBMIT</span>
                       <span className="hidden sm:inline">SUBMIT ANSWER</span>
                     </span>
@@ -825,7 +831,7 @@ function SessionScreen() {
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-[9px] font-bold tracking-[0.25em] text-[#FF3D00] uppercase animate-pulse"
+                  className="text-label font-bold tracking-[0.25em] text-[#FF3D00] uppercase animate-pulse"
                 >
                   ● RECORDING — TAP TO STOP
                 </motion.span>
@@ -843,13 +849,14 @@ function SessionScreen() {
 // ──────────────────────────────────────────────────────────
 
 function FeedbackScreen() {
-  const { responses, nextQuestion, isEvaluating } = useVoiceRecallStore();
+  const { responses, nextQuestion, isEvaluating, reevaluateResponse } = useVoiceRecallStore();
   const lastResponse = responses[responses.length - 1];
 
   if (!lastResponse) return null;
 
   const { score, whatWasCorrect, whatWasMissed, improvement, speechCorrections = [] } = lastResponse.evaluation;
   const displayVerdict = lastResponse.verdict || "UNKNOWN";
+  const isUnevaluated = lastResponse.evaluation?.verdict === "unevaluated";
 
   return (
     <motion.div
@@ -860,7 +867,7 @@ function FeedbackScreen() {
     >
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 sm:gap-8 border-b border-[#262626] pb-8 sm:pb-12">
         <motion.div variants={fadeUp}>
-          <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 block">
+          <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 block">
             EVALUATION REPORT
           </span>
           <h2 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter uppercase text-[#FAFAFA] leading-none">
@@ -875,7 +882,7 @@ function FeedbackScreen() {
       <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-l border-[#262626]">
         {whatWasCorrect && (
           <motion.div variants={fadeUp} className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
+            <span className="text-label font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
               POSITIVES
             </span>
             <p className="text-sm font-medium text-[#FAFAFA] leading-relaxed uppercase tracking-wide">
@@ -886,14 +893,14 @@ function FeedbackScreen() {
 
         {whatWasMissed && whatWasMissed.length > 0 && (
           <motion.div variants={fadeUp} className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#FF3D00] px-3 py-1 mb-4 sm:mb-6 inline-block">
+            <span className="text-label font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#FF3D00] px-3 py-1 mb-4 sm:mb-6 inline-block">
               OMISSIONS
             </span>
             <div className="space-y-3 sm:space-y-4">
               {whatWasMissed.map((item, idx) => (
                 <div key={idx} className="flex gap-3 sm:gap-4">
                   <span className="text-[#FF3D00] font-bold shrink-0">×</span>
-                  <span className="text-sm text-[#737373] uppercase tracking-wide leading-relaxed">{item}</span>
+                  <span className="text-sm text-[#8a8a8a] uppercase tracking-wide leading-relaxed">{item}</span>
                 </div>
               ))}
             </div>
@@ -905,7 +912,7 @@ function FeedbackScreen() {
             variants={fadeUp}
             className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 col-span-1 sm:col-span-2 bg-[#0A0A0A]"
           >
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
+            <span className="text-label font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
               SPEECH MISMATCHES
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -914,7 +921,7 @@ function FeedbackScreen() {
                   key={idx}
                   className="border border-[#262626] p-3 sm:p-4 text-xs font-mono uppercase tracking-widest flex items-center justify-between gap-2"
                 >
-                  <span className="text-[#737373] line-through truncate">{correction.heard}</span>
+                  <span className="text-[#8a8a8a] line-through truncate">{correction.heard}</span>
                   <ArrowRight className="w-3 h-3 text-[#FAFAFA] shrink-0" />
                   <span className="text-[#FF3D00] font-bold truncate">{correction.intended}</span>
                 </div>
@@ -928,7 +935,7 @@ function FeedbackScreen() {
             variants={fadeUp}
             className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 col-span-1 sm:col-span-2"
           >
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
+            <span className="text-label font-bold tracking-[0.2em] text-[#FAFAFA] uppercase bg-[#262626] px-3 py-1 mb-4 sm:mb-6 inline-block">
               IMPROVEMENT VECTOR
             </span>
             <p className="text-base sm:text-lg font-bold tracking-tight text-[#FF3D00] uppercase leading-relaxed max-w-2xl">
@@ -938,7 +945,17 @@ function FeedbackScreen() {
         )}
       </div>
 
-      <motion.div variants={fadeUp} className="flex justify-end pt-6 sm:pt-8">
+      <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-6 sm:pt-8">
+        {isUnevaluated && (
+          <SecondaryButton
+            onClick={() => void reevaluateResponse(responses.length - 1)}
+            disabled={isEvaluating}
+            className="justify-center"
+          >
+            <RotateCw className="w-4 h-4 mr-2" />
+            {isEvaluating ? "RE-EVALUATING..." : "RE-EVALUATE"}
+          </SecondaryButton>
+        )}
         <PrimaryButton onClick={nextQuestion} disabled={isEvaluating}>
           {isEvaluating ? "PROCESSING..." : "NEXT ITEM"}
           <ArrowRight className="w-4 h-4 ml-1" />
@@ -974,7 +991,7 @@ function CompleteScreen() {
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#262626] pb-10 sm:pb-16 mb-8 sm:mb-16 gap-6 sm:gap-8">
         <motion.div variants={fadeUp}>
-          <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-4 block">
+          <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-4 block">
             SESSION TERMINATED
           </span>
           <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-[7rem] font-bold tracking-tighter uppercase text-[#FAFAFA] leading-none mb-4">
@@ -988,17 +1005,17 @@ function CompleteScreen() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-l border-[#262626] mb-8 sm:mb-16">
         <motion.div variants={fadeUp} className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col items-center text-center">
-          <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 sm:mb-4">ITEMS</span>
+          <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 sm:mb-4">ITEMS</span>
           <div className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">{confidentAnswers}</div>
         </motion.div>
         <motion.div variants={fadeUp} className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col items-center text-center">
-          <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 sm:mb-4">AVG SCORE</span>
+          <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 sm:mb-4">AVG SCORE</span>
           <div className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FF3D00]">
             <AnimatedNumber value={avgScore} />
           </div>
         </motion.div>
         <motion.div variants={fadeUp} className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col items-center text-center">
-          <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 sm:mb-4">WEAK LINKS</span>
+          <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 sm:mb-4">WEAK LINKS</span>
           <div className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">{weakConcepts.length}</div>
         </motion.div>
       </div>
@@ -1008,7 +1025,7 @@ function CompleteScreen() {
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
             <h3 className="text-xl sm:text-3xl font-bold tracking-tighter uppercase">SYSTEM WEAKNESSES</h3>
             <div className="h-[1px] flex-1 bg-[#262626]" />
-            <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase">
+            <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
               {weakConcepts.length.toString().padStart(2, "0")} TOPICS
             </span>
           </div>
@@ -1102,7 +1119,7 @@ export default function VoiceRecall() {
                 </motion.h1>
                 <motion.div variants={fadeUp} className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6">
                   <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     <span className="hidden sm:inline">AUDIO ANALYSIS {"//"} {step.toUpperCase()}</span>
                     <span className="sm:hidden">{step.toUpperCase()}</span>
                   </p>

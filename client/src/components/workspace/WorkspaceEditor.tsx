@@ -121,12 +121,12 @@ export function WorkspaceEditor({
       <div className="h-full border border-[#262626] bg-[#0A0A0A] flex items-center justify-center">
         <div className="flex flex-col items-center text-center p-16">
           <div className="w-16 h-16 border border-[#262626] flex items-center justify-center mb-8">
-            <FileText className="w-8 h-8 text-[#737373]" />
+            <FileText className="w-8 h-8 text-[#8a8a8a]" />
           </div>
           <h3 className="text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
             VOID.
           </h3>
-          <p className="text-sm font-bold tracking-[0.2em] text-[#737373] uppercase mb-8">
+          <p className="text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8">
             NO NOTE SELECTED
           </p>
           <motion.button
@@ -176,24 +176,24 @@ export function WorkspaceEditor({
         />
 
         <div className="shrink-0 flex items-center gap-4">
-          <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase border border-[#262626] px-3 py-1">
+          <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase border border-[#262626] px-3 py-1">
             {activeNote.subject || "GENERAL"}
           </span>
-          <span className="text-[10px] font-bold tracking-widest text-[#737373] uppercase border border-[#262626] px-3 py-1">
+          <span className="text-label font-bold tracking-widest text-[#8a8a8a] uppercase border border-[#262626] px-3 py-1">
             {activeNote.sourceType}
           </span>
-          <span className="text-[10px] font-bold tracking-widest uppercase min-w-[80px] text-right">
+          <span className="text-label font-bold tracking-widest uppercase min-w-[80px] text-right">
             {isSaving ? (
               <span className="text-[#FF3D00]">SAVING...</span>
             ) : lastSavedAt ? (
               <span className="text-[#FAFAFA]">SAVED ✓</span>
             ) : (
-              <span className="text-[#737373]">NOT SAVED</span>
+              <span className="text-[#8a8a8a]">NOT SAVED</span>
             )}
           </span>
           <button
             onClick={onMoveToTrash}
-            className="flex items-center gap-2 px-4 py-2 border border-[#262626] text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FF3D00] hover:border-[#FF3D00] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-[#262626] text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FF3D00] hover:border-[#FF3D00] transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             TRASH
@@ -210,10 +210,10 @@ export function WorkspaceEditor({
             title={button.label}
             onClick={button.onClick}
             className={cn(
-              "h-10 px-3 text-[10px] font-bold tracking-widest uppercase border transition-all duration-150 inline-flex items-center gap-2",
+              "h-10 px-3 text-label font-bold tracking-widest uppercase border transition-all duration-150 inline-flex items-center gap-2",
               button.active
                 ? "bg-[#FAFAFA] text-[#0A0A0A] border-[#FAFAFA]"
-                : "bg-transparent text-[#737373] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
+                : "bg-transparent text-[#8a8a8a] border-[#262626] hover:text-[#FAFAFA] hover:border-[#FAFAFA]",
             )}
           >
             {button.icon}
@@ -241,7 +241,7 @@ export function WorkspaceEditor({
               prose-em:text-[#FAFAFA]
               prose-code:text-[#FF3D00] prose-code:bg-[#262626] prose-code:px-1 prose-code:py-0.5
               prose-pre:bg-[#1A1A1A] prose-pre:border prose-pre:border-[#262626]
-              prose-blockquote:border-l-2 prose-blockquote:border-[#FF3D00] prose-blockquote:text-[#737373] prose-blockquote:italic
+              prose-blockquote:border-l-2 prose-blockquote:border-[#FF3D00] prose-blockquote:text-[#8a8a8a] prose-blockquote:italic
               prose-ul:text-[#FAFAFA] prose-ol:text-[#FAFAFA]
               prose-li:marker:text-[#FF3D00]
               prose-hr:border-[#262626]

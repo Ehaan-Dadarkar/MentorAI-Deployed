@@ -96,7 +96,7 @@ export default function Signup() {
             className="flex flex-col gap-4 border-b border-[#262626] pb-6 md:pb-8"
           >
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+              <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                 [ REGISTRATION ]
               </span>
               <span className="h-px w-8 bg-[#262626]" />
@@ -130,12 +130,12 @@ export default function Signup() {
               <div className="space-y-5 md:space-y-6">
                 {/* Name */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block">
                     IDENTIFIER
                   </label>
                   <div className="relative border border-[#262626] bg-[#0A0A0A] group focus-within:border-[#FAFAFA] transition-colors duration-300">
                     <div className="absolute inset-y-0 left-0 flex items-center justify-center w-12 border-r border-[#262626] group-focus-within:border-[#FAFAFA] transition-colors duration-300">
-                      <User className="w-4 h-4 text-[#737373] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
+                      <User className="w-4 h-4 text-[#8a8a8a] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
                     </div>
                     <input
                       type="text"
@@ -150,12 +150,12 @@ export default function Signup() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block">
                     EMAIL ADDRESS
                   </label>
                   <div className="relative border border-[#262626] bg-[#0A0A0A] group focus-within:border-[#FAFAFA] transition-colors duration-300">
                     <div className="absolute inset-y-0 left-0 flex items-center justify-center w-12 border-r border-[#262626] group-focus-within:border-[#FAFAFA] transition-colors duration-300">
-                      <Mail className="w-4 h-4 text-[#737373] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
+                      <Mail className="w-4 h-4 text-[#8a8a8a] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
                     </div>
                     <input
                       type="email"
@@ -170,12 +170,12 @@ export default function Signup() {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase block">
+                  <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block">
                     SECURITY KEY
                   </label>
                   <div className="relative border border-[#262626] bg-[#0A0A0A] group focus-within:border-[#FAFAFA] transition-colors duration-300">
                     <div className="absolute inset-y-0 left-0 flex items-center justify-center w-12 border-r border-[#262626] group-focus-within:border-[#FAFAFA] transition-colors duration-300">
-                      <Lock className="w-4 h-4 text-[#737373] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
+                      <Lock className="w-4 h-4 text-[#8a8a8a] group-focus-within:text-[#FAFAFA] transition-colors duration-300" />
                     </div>
                     <input
                       type="password"
@@ -205,9 +205,9 @@ export default function Signup() {
           {/* Footer link */}
           <motion.div
             variants={fadeUp}
-            className="flex justify-between items-center text-[10px] font-bold tracking-[0.2em] uppercase border-t border-[#262626] pt-6 md:pt-8"
+            className="flex justify-between items-center text-label font-bold tracking-[0.2em] uppercase border-t border-[#262626] pt-6 md:pt-8"
           >
-            <span className="text-[#737373]">REGISTERED?</span>
+            <span className="text-[#8a8a8a]">REGISTERED?</span>
             <Link
               to="/login"
               className="inline-link text-[#FAFAFA] hover:text-[#FF3D00] transition-colors flex items-center gap-2 py-2"

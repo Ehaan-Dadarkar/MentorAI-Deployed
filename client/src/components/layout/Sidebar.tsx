@@ -81,7 +81,7 @@ function SidebarItem({
         collapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
         isActive
           ? "bg-[#FAFAFA] text-[#0A0A0A]"
-          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
+          : "text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
       )}
     >
       {isActive && (
@@ -109,7 +109,7 @@ function SidebarItem({
       </AnimatePresence>
 
       {collapsed && (
-        <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+        <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
           {label}
         </div>
       )}
@@ -224,7 +224,7 @@ export function Sidebar() {
           <button
             onClick={openNexus}
             className={cn(
-              "relative flex items-center w-full py-2.5 text-xs font-bold tracking-widest text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all duration-150 group uppercase overflow-hidden",
+              "relative flex items-center w-full py-2.5 text-xs font-bold tracking-widest text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all duration-150 group uppercase overflow-hidden",
               collapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
             )}
           >
@@ -239,14 +239,14 @@ export function Sidebar() {
                   className="flex items-center justify-between flex-1 whitespace-nowrap overflow-hidden"
                 >
                   <span className="text-left">Nexus</span>
-                  <kbd className="text-[10px] font-bold tracking-widest text-[#737373] border border-[#262626] px-2 py-1 ml-2">
+                  <kbd className="text-label font-bold tracking-widest text-[#8a8a8a] border border-[#262626] px-2 py-1 ml-2">
                     ⌘K
                   </kbd>
                 </motion.div>
               )}
             </AnimatePresence>
             {collapsed && (
-              <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+              <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
                 Nexus (⌘K)
               </div>
             )}
@@ -268,7 +268,7 @@ export function Sidebar() {
                   collapsed ? "justify-center px-0" : "justify-start px-3 gap-3",
                   isActive
                     ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                    : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+                    : "text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626]",
                   "active:text-[#FAFAFA] active:bg-[#262626]"
                 )}
               >
@@ -294,7 +294,7 @@ export function Sidebar() {
                   )}
                 </AnimatePresence>
                 {collapsed && (
-                  <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+                  <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
                     {item.label}
                   </div>
                 )}
@@ -325,12 +325,12 @@ export function Sidebar() {
                   transition={{ duration: 0.15 }}
                   className="min-w-0 flex items-center gap-2 overflow-hidden"
                 >
-                  <span className="text-[10px] font-bold tracking-widest text-[#FAFAFA] truncate uppercase text-left">
+                  <span className="text-label font-bold tracking-widest text-[#FAFAFA] truncate uppercase text-left">
                     {user?.name}
                   </span>
                   <button
                     onClick={() => logout()}
-                    className="text-[#737373] hover:text-[#FF3D00] transition-colors shrink-0"
+                    className="text-[#8a8a8a] hover:text-[#FF3D00] transition-colors shrink-0"
                     title="Logout"
                   >
                     <LogOut className="w-4 h-4" />
@@ -339,14 +339,14 @@ export function Sidebar() {
               )}
             </AnimatePresence>
             {collapsed && (
-              <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+              <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
                 {user?.name}
               </div>
             )}
           </div>
           <button
             onClick={toggleCollapsed}
-            className="p-2 text-[#737373] hover:text-[#FAFAFA] transition-colors shrink-0 border border-[#262626] hover:border-[#FAFAFA]"
+            className="p-2 text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors shrink-0 border border-[#262626] hover:border-[#FAFAFA]"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -380,14 +380,14 @@ export function Sidebar() {
                   "flex items-center justify-center p-2.5 transition-all duration-150 relative group",
                   isActive
                     ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                    : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626]",
+                    : "text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626]",
                 )}
               >
                 {isActive && (
                   <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF3D00]" />
                 )}
                 <item.icon className="w-4 h-4 shrink-0" />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+                <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
                   {item.label}
                 </div>
               </NavLink>
@@ -401,10 +401,10 @@ export function Sidebar() {
         <div className="px-2 py-2">
           <button
             onClick={openNexus}
-            className="flex items-center justify-center p-2.5 w-full text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all relative group"
+            className="flex items-center justify-center p-2.5 w-full text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626] transition-all relative group"
           >
             <Command className="w-4 h-4" />
-            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
               Nexus (⌘K)
             </div>
           </button>
@@ -423,14 +423,14 @@ export function Sidebar() {
                   "flex items-center justify-center p-2.5 transition-all relative group",
                   isActive
                     ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                    : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
+                    : "text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
                 )}
               >
                 {isActive && (
                   <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF3D00]" />
                 )}
                 <item.icon className="w-4 h-4" />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+                <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
                   {item.label}
                 </div>
               </NavLink>
@@ -444,7 +444,7 @@ export function Sidebar() {
             <span className="text-xs font-black text-[#0A0A0A]">
               {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </span>
-            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
               {user?.name}
             </div>
           </div>
@@ -454,11 +454,11 @@ export function Sidebar() {
         <div className="border-t border-[#262626] px-2 py-2">
           <button
             onClick={() => logout()}
-            className="flex items-center justify-center p-2.5 w-full text-[#737373] hover:text-[#FF3D00] hover:bg-[#262626] transition-all relative group"
+            className="flex items-center justify-center p-2.5 w-full text-[#8a8a8a] hover:text-[#FF3D00] hover:bg-[#262626] transition-all relative group"
             title="Logout"
           >
             <LogOut className="w-4 h-4" />
-            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-[10px] font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
+            <div className="absolute left-full ml-3 px-3 py-2 bg-[#0A0A0A] border border-[#262626] text-label font-bold tracking-widest text-[#FAFAFA] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 uppercase">
               Logout
             </div>
           </button>
@@ -480,13 +480,13 @@ export function Sidebar() {
         <div className="flex items-center gap-2">
           <button
             onClick={openNexus}
-            className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
+            className="p-2 text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
           >
             <Command className="w-5 h-5" />
           </button>
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
+            className="p-2 text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -510,9 +510,9 @@ export function Sidebar() {
                 className="flex flex-1 items-center justify-center"
               >
                 {/* ↓ CHANGED: items-center removes left-align; no pl-3 / w-full needed */}
-                <div className="flex flex-col items-center gap-[3px] text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors">
+                <div className="flex flex-col items-center gap-[3px] text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors">
                   <item.icon className="w-5 h-5" />
-                  <span className="text-[9px] font-bold tracking-wider uppercase leading-none">
+                  <span className="text-label font-bold tracking-wider uppercase leading-none">
                     {item.label}
                   </span>
                 </div>
@@ -532,7 +532,7 @@ export function Sidebar() {
               // ↓ CHANGED: justify-center so content sits in the middle of each cell
               className={cn(
                 "relative flex flex-1 items-center justify-center transition-colors",
-                isActive ? "text-[#FAFAFA]" : "text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA]",
+                isActive ? "text-[#FAFAFA]" : "text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA]",
               )}
             >
               {/* ↓ active bar now spans the full cell width */}
@@ -542,7 +542,7 @@ export function Sidebar() {
               {/* ↓ CHANGED: items-center for vertical + horizontal centering; no pl-3 / w-full */}
               <div className="flex flex-col items-center gap-[3px]">
                 <item.icon className="w-5 h-5" />
-                <span className="text-[9px] font-bold tracking-wider uppercase leading-none">
+                <span className="text-label font-bold tracking-wider uppercase leading-none">
                   {item.label}
                 </span>
               </div>
@@ -587,7 +587,7 @@ export function Sidebar() {
                 </div>
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="p-2 text-[#737373] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
+                  className="p-2 text-[#8a8a8a] hover:text-[#FAFAFA] active:text-[#FAFAFA] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -609,7 +609,7 @@ export function Sidebar() {
                         "relative flex items-center w-full py-3 px-3 text-xs font-bold tracking-widest uppercase transition-all duration-150",
                         isActive
                           ? "bg-[#FAFAFA] text-[#0A0A0A]"
-                          : "text-[#737373] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
+                          : "text-[#8a8a8a] hover:text-[#FAFAFA] hover:bg-[#262626] active:text-[#FAFAFA] active:bg-[#262626]",
                       )}
                     >
                       {isActive && (
@@ -632,13 +632,13 @@ export function Sidebar() {
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold tracking-widest text-[#FAFAFA] uppercase truncate max-w-[140px]">
+                  <span className="text-label font-bold tracking-widest text-[#FAFAFA] uppercase truncate max-w-[140px]">
                     {user?.name}
                   </span>
                 </div>
                 <button
                   onClick={() => { logout(); setMobileDrawerOpen(false); }}
-                  className="p-2 text-[#737373] hover:text-[#FF3D00] transition-colors shrink-0"
+                  className="p-2 text-[#8a8a8a] hover:text-[#FF3D00] transition-colors shrink-0"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />

@@ -16,8 +16,26 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
 
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* ── Typefaces: Alt B · system-native, zero webfonts ──────────
+     "DM Sans" / "Inter Tight" / "JetBrains Mono" were phantom
+     references — no Google Fonts link, no @fontsource, no @font-face
+     ever shipped, so every device already rendered these fallbacks.
+     The stacks below are the honest contract: dev = prod, zero FOUT,
+     identical offline. Brutalism is carried by weight / case /
+     tracking, not by a specific grotesque. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ── Type scale: ONE token scale for type sizes ───────────────
+     The label floor is 12px (text-label). No text anywhere in the
+     app renders below 12px — ad-hoc text-[10px]/[9px]/[8px] values
+     were raised to this floor. */
+  --text-display: clamp(2.6rem, 7vw, 5.5rem);
+  --text-h1: 2.25rem;
+  --text-h2: 1.6rem;
+  --text-body: 0.9375rem;
+  --text-label: 0.75rem;
 }
 
 @layer base {
@@ -40,9 +58,11 @@
   button:active,
   a:active,
   [role="button"]:active {
+    /* Opacity only: the old transform: scale(0.97) created a
+       containing block on the button, breaking position: fixed
+       descendants (dropdowns, tooltips) during the press. */
     opacity: 0.75;
-    transform: scale(0.97);
-    transition: opacity 0.05s, transform 0.05s;
+    transition: opacity 0.05s;
   }
 
   html {
@@ -80,12 +100,22 @@
     font-size: 16px !important;
   }
 
-  /* ── Minimum touch targets (Apple HIG: 44×44 pt) ─────────── */
+  /* ── Minimum touch targets (Apple HIG: 44×44 pt) ───────────
+     Scoped: the 44px floor applies ONLY when the element carries no
+     explicit height utility. The old global rule defeated the
+     component sizing system (min-height: 44px overrode classes like
+     h-8 and h-9). Elements with an explicit height class keep their
+     designed size; everything else still gets an accessible target. */
+  button:not([class*="h-"]):not([class*="min-h-"]),
+  a:not([class*="h-"]):not([class*="min-h-"]),
+  [role="button"]:not([class*="h-"]):not([class*="min-h-"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
   button,
   a,
   [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;

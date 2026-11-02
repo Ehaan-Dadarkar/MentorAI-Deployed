@@ -49,14 +49,14 @@ export function WorkspaceToast({ message, tone, onClose }: WorkspaceToastProps) 
             <AlertCircle className="h-4 w-4 text-[#FF3D00] shrink-0" />
           )}
           <p className={cn(
-            "text-[10px] font-bold tracking-widest uppercase",
+            "text-label font-bold tracking-widest uppercase",
             tone === "success" ? "text-[#FAFAFA]" : "text-[#FF3D00]"
           )}>
             {message}
           </p>
           <button
             type="button"
-            className="ml-2 p-1 text-[#737373] hover:text-[#FAFAFA] transition-colors"
+            className="ml-2 p-1 text-[#8a8a8a] hover:text-[#FAFAFA] transition-colors"
             onClick={onClose}
             aria-label="Close notification"
           >

@@ -109,7 +109,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
           API KEY
         </h2>
         <div className="h-px flex-1 bg-[#262626]" />
-        <span className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hidden sm:block">
+        <span className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hidden sm:block">
           02 ITEMS
         </span>
       </div>
@@ -120,21 +120,21 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
           <div className="h-12 w-2/3 border-b border-[#262626] bg-[#0A0A0A] animate-pulse" />
         </div>
       ) : isDemo ? (
-        <div className="border border-[#262626] bg-[#0A0A0A] px-4 py-4 text-[10px] font-bold tracking-[0.16em] text-[#FAFAFA] uppercase leading-6">
+        <div className="border border-[#262626] bg-[#0A0A0A] px-4 py-4 text-label font-bold tracking-[0.16em] text-[#FAFAFA] uppercase leading-6">
           DEMO ACCOUNT USES A SHARED KEY — REGISTER A FREE ACCOUNT TO USE YOUR OWN KEY
         </div>
       ) : (
         <div className="space-y-8">
           {/* Status indicator */}
           <div>
-            <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+            <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
               CURRENT STATUS
             </label>
             <div className="flex items-center gap-3 py-2 border-b border-[#262626]">
               <div
                 className={cn(
                   "w-1.5 h-1.5 rounded-full shrink-0",
-                  hasApiKey ? "bg-[#FF3D00]" : "bg-[#737373]",
+                  hasApiKey ? "bg-[#FF3D00]" : "bg-[#8a8a8a]",
                 )}
               />
               {hasApiKey ? (
@@ -142,7 +142,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
                   {maskedKey}
                 </span>
               ) : (
-                <span className="text-sm font-bold tracking-widest text-[#737373] uppercase">
+                <span className="text-sm font-bold tracking-widest text-[#8a8a8a] uppercase">
                   NO KEY SAVED — AI FEATURES DISABLED
                 </span>
               )}
@@ -153,7 +153,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
           {hasApiKey && (
             <div className="flex items-start gap-3 border border-[#FF3D00]/30 bg-[#FF3D00]/5 px-4 py-3">
               <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0 mt-1.25" />
-              <p className="text-[10px] font-bold tracking-[0.16em] leading-5 text-[#FF3D00] uppercase">
+              <p className="text-label font-bold tracking-[0.16em] leading-5 text-[#FF3D00] uppercase">
                 YOU ALREADY HAVE AN API KEY SAVED — LEAVE THE FIELD BELOW EMPTY IF YOU
                 DON'T WANT TO REPLACE IT.
               </p>
@@ -162,7 +162,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
 
           {/* Key input */}
           <div>
-            <label className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-3 block">
+            <label className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-3 block">
               {hasApiKey ? "REPLACE KEY" : "ADD OPENROUTER KEY"}
             </label>
             <input
@@ -179,7 +179,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
               }}
               className="w-full bg-transparent border-b border-[#262626] pb-2 text-sm text-[#FAFAFA] placeholder:text-[#262626] focus:outline-none focus:border-[#FAFAFA] transition-colors"
             />
-            <p className="mt-3 text-[10px] leading-5 tracking-[0.16em] text-[#737373] uppercase">
+            <p className="mt-3 text-label leading-5 tracking-[0.16em] text-[#8a8a8a] uppercase">
               GET A FREE KEY AT{" "}
               <a
                 href="https://openrouter.ai/keys"
@@ -198,7 +198,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
               <button
                 onClick={handleRemove}
                 disabled={isRemoving}
-                className="text-xs font-bold tracking-[0.2em] text-[#737373] uppercase hover:text-[#FF3D00] transition-colors disabled:opacity-40 disabled:pointer-events-none border-b border-transparent hover:border-[#FF3D00] pb-0.5"
+                className="text-xs font-bold tracking-[0.2em] text-[#8a8a8a] uppercase hover:text-[#FF3D00] transition-colors disabled:opacity-40 disabled:pointer-events-none border-b border-transparent hover:border-[#FF3D00] pb-0.5"
               >
                 {isRemoving ? "REMOVING..." : "REMOVE KEY"}
               </button>
@@ -209,7 +209,7 @@ const ApiKeySettings = forwardRef<ApiKeySettingsRef>((_, ref) => {
           {message && (
             <p
               className={cn(
-                "text-[10px] font-bold tracking-[0.2em] uppercase",
+                "text-label font-bold tracking-[0.2em] uppercase",
                 message.type === "success" ? "text-[#FAFAFA]" : "text-[#FF3D00]",
               )}
             >

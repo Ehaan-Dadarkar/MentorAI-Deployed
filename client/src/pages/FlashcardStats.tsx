@@ -60,7 +60,7 @@ const GhostButton = ({
     initial="initial"
     onClick={onClick}
     className={cn(
-      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-[10px] font-bold tracking-widest text-[#737373] uppercase hover:text-[#FAFAFA] transition-colors",
+      "group relative inline-flex items-center gap-2 overflow-hidden bg-transparent px-4 py-3 text-label font-bold tracking-widest text-[#8a8a8a] uppercase hover:text-[#FAFAFA] transition-colors",
       className
     )}
   >
@@ -192,7 +192,7 @@ export default function FlashcardStats() {
                 className="mt-4 sm:mt-6 flex items-center gap-4 sm:gap-6"
               >
                 <div className="h-1 w-8 sm:w-12 bg-[#FF3D00]" />
-                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   COGNITIVE RETENTION METRICS
                 </p>
               </motion.div>
@@ -222,19 +222,19 @@ export default function FlashcardStats() {
               className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col justify-between min-h-40 sm:min-h-60"
             >
               <div className="flex justify-between items-start mb-auto">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
+                <span className="text-label font-bold tracking-[0.2em] text-[#FF3D00] uppercase">
                   ACTIVE
                 </span>
-                <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-[#737373]" />
+                <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a8a8a]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] mb-2 uppercase">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] mb-2 uppercase">
                   CURRENT STREAK
                 </p>
                 {/* ↓ number scales from text-4xl */}
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">
                   {stats?.currentStreak || 0}
-                  <span className="text-lg sm:text-2xl text-[#737373] ml-2 tracking-normal">DAYS</span>
+                  <span className="text-lg sm:text-2xl text-[#8a8a8a] ml-2 tracking-normal">DAYS</span>
                 </p>
               </div>
             </motion.div>
@@ -247,18 +247,18 @@ export default function FlashcardStats() {
               className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col justify-between min-h-40 sm:min-h-60 bg-[#0A0A0A]"
             >
               <div className="flex justify-between items-start mb-auto">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   MAXIMUM
                 </span>
-                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#737373]" />
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a8a8a]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] mb-2 uppercase">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] mb-2 uppercase">
                   LONGEST STREAK
                 </p>
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">
                   {stats?.longestStreak || 0}
-                  <span className="text-lg sm:text-2xl text-[#737373] ml-2 tracking-normal">DAYS</span>
+                  <span className="text-lg sm:text-2xl text-[#8a8a8a] ml-2 tracking-normal">DAYS</span>
                 </p>
               </div>
             </motion.div>
@@ -271,18 +271,18 @@ export default function FlashcardStats() {
               className="border-b border-r border-[#262626] p-5 sm:p-8 md:p-12 flex flex-col justify-between min-h-40 sm:min-h-60"
             >
               <div className="flex justify-between items-start mb-auto">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                   ACHIEVEMENT
                 </span>
-                <Star className="w-4 h-4 sm:w-5 sm:h-5 text-[#737373]" />
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 text-[#8a8a8a]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] mb-2 uppercase">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] mb-2 uppercase">
                   CARDS MASTERED
                 </p>
                 <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-[#FAFAFA]">
                   {stats?.milestones.totalMastered || 0}
-                  <span className="text-lg sm:text-2xl text-[#737373] ml-2 tracking-normal">TOTAL</span>
+                  <span className="text-lg sm:text-2xl text-[#8a8a8a] ml-2 tracking-normal">TOTAL</span>
                 </p>
               </div>
             </motion.div>
@@ -296,7 +296,7 @@ export default function FlashcardStats() {
                 ACTIVITY MATRIX
               </h2>
               <div className="h-px flex-1 bg-[#262626]" />
-              <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+              <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                 365 DAY SPAN
               </span>
             </div>
@@ -315,7 +315,7 @@ export default function FlashcardStats() {
                   {heatmap.monthLabels.map((month) => (
                     <span
                       key={`${month.label}-${month.weekIndex}`}
-                      className="absolute text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase"
+                      className="absolute text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase"
                       style={{ left: `${month.weekIndex * 16}px` }}
                     >
                       {month.label}
@@ -355,14 +355,14 @@ export default function FlashcardStats() {
 
                 {/* Legend */}
                 <div className="flex items-center justify-end gap-2 mt-6">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     NEGLIGIBLE
                   </span>
                   <div className="w-[13px] h-[13px] bg-[#0A0A0A] border border-[#262626]" />
                   <div className="w-[13px] h-[13px] bg-[#FF3D00]/20 border border-[#FF3D00]/30" />
                   <div className="w-[13px] h-[13px] bg-[#FF3D00]/50 border border-[#FF3D00]/60" />
                   <div className="w-[13px] h-[13px] bg-[#FF3D00] border border-[#FF3D00]" />
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase">
+                  <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase">
                     PROLIFIC
                   </span>
                 </div>
@@ -381,7 +381,7 @@ export default function FlashcardStats() {
             {/* Total Reviewed */}
             <div className="border-b border-r border-[#262626] p-5 sm:p-8 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-2">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-2">
                   TOTAL CARDS REVIEWED
                 </p>
                 {/* ↓ number scales from text-3xl */}
@@ -396,7 +396,7 @@ export default function FlashcardStats() {
             {/* Total Decks */}
             <div className="border-b border-r border-[#262626] p-5 sm:p-8 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold tracking-[0.2em] text-[#737373] uppercase mb-2">
+                <p className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-2">
                   TOTAL DECKS CREATED
                 </p>
                 <p className="text-3xl sm:text-4xl font-bold tracking-tighter text-[#FAFAFA] mt-1">

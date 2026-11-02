@@ -147,10 +147,10 @@ function SectionSkeleton({ height = "h-48" }: { height?: string }) {
 function SectionError({ message }: { message: string }) {
   return (
     <div className="border border-[#262626] p-8 text-center">
-      <p className="text-xs font-mono tracking-[0.1em] uppercase text-[#737373]">
+      <p className="text-xs font-mono tracking-[0.1em] uppercase text-[#8a8a8a]">
         {message}
       </p>
-      <p className="mt-2 text-[10px] font-mono tracking-[0.1em] uppercase text-[#4d4d4d]">
+      <p className="mt-2 text-label font-mono tracking-[0.1em] uppercase text-[#8a8a8a]">
         Refresh the page to retry
       </p>
     </div>
