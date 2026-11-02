@@ -3,8 +3,50 @@ const { z } = require("zod");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const CreditPurchase = require("../models/CreditPurchase");
+const axios = require("axios");
 const paypal = require("../services/paypal");
 const credits = require("../services/credits");
+
+// H2: PayPal answers a second capture call on an already-captured
+// order with 422 / ORDER_ALREADY_CAPTURED. That is exactly the
+// "money moved, response lost" window: our row stayed pending while
+// PayPal holds the money. Retrying the capture call can never
+// succeed then, so detect it and recover by reading the order and
+// applying its completed capture through the same exactly-once
+// applyCapture claim (atomic pending -> captured, then $inc).
+function isOrderAlreadyCapturedError(err) {
+  const details = err && err.response && err.response.data && err.response.data.details;
+  return (
+    err &&
+    err.response &&
+    err.response.status === 422 &&
+    Array.isArray(details) &&
+    details.some((d) => d && d.issue === "ORDER_ALREADY_CAPTURED")
+  );
+}
+
+// Fetches the PayPal order and returns it when it carries a
+// COMPLETED capture. The order object already has the shape
+// applyCapture expects (status + purchase_units[].payments.captures),
+// so it is passed through unchanged.
+async function fetchCompletedOrderCapture(orderId) {
+  const token = await paypal.getAccessToken();
+  const res = await axios.get(
+    `${paypal.paypalBase()}/v2/checkout/orders/${encodeURIComponent(orderId)}`,
+    {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      timeout: 30000,
+    },
+  );
+  const order = res.data;
+  if (!order || order.status !== "COMPLETED") return null;
+  const captures = (order.purchase_units || []).flatMap(
+    (unit) => (unit.payments && unit.payments.captures) || [],
+  );
+  const completed = captures.find((c) => c && c.status === "COMPLETED");
+  if (!completed) return null;
+  return order;
+}
 
 const router = express.Router();
 
@@ -77,6 +119,38 @@ router.post("/create-order", auth, validate(createOrderSchema), async (req, res)
   }
 });
 
+// H2: purchase history backing the Credits page's pending-purchase
+// list. A capture that fails (PayPal 500, lost response, dropped tab)
+// leaves the row pending; the client lists those rows and offers a
+// retry, instead of the payment being stranded with no self-service
+// path.
+router.get("/purchases", auth, async (req, res) => {
+  try {
+    const purchases = await CreditPurchase.find({ userId: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .select("paypalOrderId packId credits amountCents currency status createdAt")
+      .lean();
+    res.json({
+      success: true,
+      purchases: purchases.map((p) => ({
+        id: String(p._id),
+        paypalOrderId: p.paypalOrderId,
+        packId: p.packId,
+        credits: p.credits,
+        amountCents: p.amountCents,
+        amount: paypal.formatAmount(p.amountCents),
+        currency: p.currency || "USD",
+        status: p.status,
+        createdAt: p.createdAt,
+      })),
+    });
+  } catch (err) {
+    console.error("Error in /api/credits/purchases GET", err.message || err);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
 const captureOrderSchema = z.object({
   orderId: z.string().min(1).max(200),
 });
@@ -102,7 +176,27 @@ router.post("/capture-order", auth, validate(captureOrderSchema), async (req, re
       const balance = await credits.getBalance(req.user._id);
       return res.json({ success: true, credits: balance, alreadyCaptured: true });
     }
-    const capture = await paypal.captureOrder(req.body.orderId);
+    let capture;
+    try {
+      capture = await paypal.captureOrder(req.body.orderId);
+    } catch (captureErr) {
+      // Lost-response window: the money moved but our capture call
+      // never answered, so the row stayed pending and PayPal now
+      // refuses a second capture. Recover from the order itself.
+      if (isOrderAlreadyCapturedError(captureErr)) {
+        const recovered = await fetchCompletedOrderCapture(req.body.orderId);
+        if (recovered) {
+          const result = await credits.applyCapture(req.user._id, purchase, recovered);
+          return res.json({
+            success: true,
+            credits: result.balance,
+            alreadyCaptured: result.alreadyCaptured,
+            recovered: true,
+          });
+        }
+      }
+      throw captureErr;
+    }
     const result = await credits.applyCapture(req.user._id, purchase, capture);
     res.json({ success: true, credits: result.balance, alreadyCaptured: result.alreadyCaptured });
   } catch (err) {

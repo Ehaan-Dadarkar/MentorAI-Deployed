@@ -305,7 +305,7 @@ export default function QuizPage() {
   };
 
   const handleGenerate = async () => {
-    if (guardOpenRouterAction()) return;
+    if (await guardOpenRouterAction()) return;
     setSourceError(null);
     const normalizedDeckName = deckName.trim();
     if (!normalizedDeckName) { setSourceError("Enter a name for the quiz deck."); return; }
@@ -338,16 +338,23 @@ export default function QuizPage() {
       } catch { setSourceError("Failed to load flashcard deck."); return; }
     }
 
-    const generatedQuiz = await generateQuiz({
-      subject: generatedSubject, topic: topic.trim() || undefined,
-      count, difficulty, content: generatedContent,
-      deckName: normalizedDeckName, createFlashcardDeck,
-    });
+    // M8: a failed generation must surface a message instead of
+    // letting the rejection escape unhandled (spinner stops, the
+    // user sees nothing).
+    try {
+      const generatedQuiz = await generateQuiz({
+        subject: generatedSubject, topic: topic.trim() || undefined,
+        count, difficulty, content: generatedContent,
+        deckName: normalizedDeckName, createFlashcardDeck,
+      });
 
-    setQuizDecks((prev) => [generatedQuiz, ...prev.filter((q) => q._id !== generatedQuiz._id)]);
-    setQuestionIndex(0); setElapsedSeconds(0); setExpandedRows({});
-    setIsNewDeckModalOpen(false);
-    handleOpenDeckDetail(generatedQuiz);
+      setQuizDecks((prev) => [generatedQuiz, ...prev.filter((q) => q._id !== generatedQuiz._id)]);
+      setQuestionIndex(0); setElapsedSeconds(0); setExpandedRows({});
+      setIsNewDeckModalOpen(false);
+      handleOpenDeckDetail(generatedQuiz);
+    } catch {
+      setSourceError("Quiz generation failed. Try again.");
+    }
   };
 
   const handleStartDeckQuiz = async (quizId: string) => {
@@ -884,13 +891,19 @@ export default function QuizPage() {
                   {currentQuiz.questions[questionIndex].options.map((option, idx) => {
                     const selected = answers[questionIndex] ?? -1;
                     const isSelected = selected === idx;
-                    const isCorrectOption = currentQuiz.questions[questionIndex].correctAnswer === idx;
+                    // M3: the server strips the answer key until the quiz
+                    // is submitted, so only verdict an option when the key
+                    // is actually present — never mark a guess wrong blind.
+                    const answerKey = currentQuiz.questions[questionIndex].correctAnswer;
+                    const hasAnswerKey = typeof answerKey === "number";
+                    const isCorrectOption = hasAnswerKey && answerKey === idx;
                     const answered = selected !== -1;
 
                     let buttonClass = "border border-[#262626] bg-transparent text-[#FAFAFA] hover:border-[#FAFAFA]";
                     if (answered) {
                       if (isCorrectOption) buttonClass = "border border-[#FAFAFA] bg-[#FAFAFA] text-[#0A0A0A]";
-                      else if (isSelected && !isCorrectOption) buttonClass = "border border-[#FF3D00] bg-transparent text-[#FF3D00]";
+                      else if (hasAnswerKey && isSelected) buttonClass = "border border-[#FF3D00] bg-transparent text-[#FF3D00]";
+                      else if (isSelected) buttonClass = "border border-[#FAFAFA] bg-transparent text-[#FAFAFA]";
                       else buttonClass = "border border-[#262626] bg-transparent text-[#737373] opacity-50";
                     }
 
@@ -911,14 +924,16 @@ export default function QuizPage() {
                           {option}
                         </span>
                         {answered && isCorrectOption && <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />}
-                        {answered && isSelected && !isCorrectOption && <XCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />}
+                        {answered && hasAnswerKey && isSelected && !isCorrectOption && <XCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />}
                       </button>
                     );
                   })}
                 </div>
 
                 <AnimatePresence>
-                  {answers[questionIndex] !== undefined && (
+                  {/* M3: the explanation is stripped pre-submit, so the
+                      analysis box only renders when one is present. */}
+                  {answers[questionIndex] !== undefined && currentQuiz.questions[questionIndex].explanation && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
                       className="overflow-hidden mt-6 sm:mt-8"

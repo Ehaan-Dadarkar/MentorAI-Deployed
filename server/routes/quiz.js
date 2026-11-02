@@ -254,8 +254,13 @@ async function persistQuizAndSession({
 
   let quiz;
   if (existingQuizId) {
+    // The completedAt guard makes completion atomic (M2): two
+    // concurrent submits race here and only the winner's update
+    // matches. The loser gets "already submitted" and never
+    // reaches the StudySession.create below, so study sessions
+    // cannot double-persist.
     quiz = await Quiz.findOneAndUpdate(
-      { _id: existingQuizId, userId },
+      { _id: existingQuizId, userId, completedAt: { $exists: false } },
       {
         subject: normalizedSubject,
         questions: normalizedQuestions,
@@ -270,8 +275,11 @@ async function persistQuizAndSession({
     );
 
     if (!quiz) {
-      const error = new Error("Quiz not found");
-      error.status = 404;
+      // Distinguish "lost the race / already submitted" from "no
+      // such quiz", so the caller still gets the right status.
+      const exists = await Quiz.exists({ _id: existingQuizId, userId });
+      const error = new Error(exists ? "Quiz already submitted" : "Quiz not found");
+      error.status = exists ? 400 : 404;
       throw error;
     }
   } else {
@@ -359,9 +367,6 @@ router.post(
   validate(generateSchema),
   async (req, res, next) => {
     try {
-      const access = await requireOpenRouterAccess(req, res);
-      if (!access) return;
-
       const {
         subject,
         topic,
@@ -381,8 +386,14 @@ router.post(
         content,
       });
 
+      // Cache lookup runs BEFORE the credit gate (M1): a cache hit
+      // costs the operator no provider call, so it must not spend a
+      // credit. Only a cache miss reaches requireOpenRouterAccess.
       let questions = readCachedQuiz(cacheKey);
+      let access = null;
       if (!questions) {
+        access = await requireOpenRouterAccess(req, res);
+        if (!access) return;
         questions = await generateQuestionsWithRetry({
           subject,
           topic,
@@ -449,6 +460,27 @@ function storedQuestionsForGrading(quiz) {
 }
 router.storedQuestionsForGrading = storedQuestionsForGrading;
 
+// Strips grading fields from a quiz that has not been submitted
+// yet (M3): the answer key (correctAnswer) and the explanations
+// (which restate the key) must not leave the server pre-submit.
+// Submitted quizzes (completedAt set) keep their full shape.
+function stripGradingFields(quizDoc) {
+  const quiz =
+    typeof quizDoc.toObject === "function" ? quizDoc.toObject() : { ...quizDoc };
+  if (quiz.completedAt) return quiz;
+  if (Array.isArray(quiz.questions)) {
+    quiz.questions = quiz.questions.map((q) => {
+      const question =
+        q && typeof q.toObject === "function" ? q.toObject() : { ...q };
+      delete question.correctAnswer;
+      delete question.explanation;
+      return question;
+    });
+  }
+  return quiz;
+}
+router.stripGradingFields = stripGradingFields;
+
 // POST /api/quiz/submit
 const submitSchema = z.object({
   quizId: z.string().min(1),
@@ -462,7 +494,7 @@ const submitSchema = z.object({
       z.object({
         question: z.string(),
         options: z.array(z.string()).length(4),
-        correctIndex: z.number().int().min(0).max(3),
+        correctIndex: z.number().int().min(0).max(3).optional(),
         explanation: z.string().optional().default(""),
         concept: z.string().optional().default("General"),
       }),
@@ -642,7 +674,7 @@ router.get("/", auth, async (req, res, next) => {
       .limit(50)
       .select("-questions.explanation");
 
-    res.json({ quizzes });
+    res.json({ quizzes: quizzes.map(stripGradingFields) });
   } catch (error) {
     next(error);
   }
@@ -654,7 +686,7 @@ router.get("/:id", auth, async (req, res, next) => {
     const quiz = await Quiz.findOne({ _id: req.params.id, userId: req.userId });
     if (!quiz) return res.status(404).json({ error: "Quiz not found" });
 
-    res.json({ quiz });
+    res.json({ quiz: stripGradingFields(quiz) });
   } catch (error) {
     next(error);
   }
