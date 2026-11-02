@@ -6,7 +6,14 @@ import os
 import shutil
 import subprocess
 
-os.environ["PATH"] = r"C:\ffmpeg\bin" + os.pathsep + os.environ.get("PATH", "")
+# H4: portable ffmpeg resolution. FFMPEG_DIR wins when set (any OS);
+# otherwise ffmpeg must already be on PATH. (The old hardcoded
+# C:\ffmpeg\bin broke every non-Windows host.)
+_ffmpeg_dir = os.environ.get("FFMPEG_DIR")
+if _ffmpeg_dir:
+    os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+if shutil.which("ffmpeg") is None:
+    print("WARNING: ffmpeg not found on PATH (set FFMPEG_DIR) - transcription will fail")
 
 app = FastAPI(title="Mentorai Whisper Server")
 
@@ -22,7 +29,10 @@ app.add_middleware(
 )
 
 DEVICE = "cpu"
-MODEL_NAME = "small"
+# H4: Render free tier has 512 MB RAM; whisper "small" needs ~1 GB and
+# OOMs there. Default to "tiny"; set WHISPER_MODEL=small (or larger) on
+# hosts with the RAM for it.
+MODEL_NAME = os.environ.get("WHISPER_MODEL", "tiny")
 print(f"Loading whisper-{MODEL_NAME} on CPU...")
 MODEL = whisper.load_model(MODEL_NAME, device=DEVICE)
 print(f"Whisper ready on CPU")

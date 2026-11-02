@@ -18,3 +18,27 @@ services:
         sync: false
       - key: CLIENT_URL
         sync: false
+      # H4: URL of the whisper-server service below. Falls back to
+      # http://127.0.0.1:5001 when unset (local dev).
+      - key: WHISPER_SERVER_URL
+        sync: false
+  # H4: standalone Whisper transcription service (free tier). The backend
+  # proxies /api/voice/transcribe to this service's /transcribe endpoint.
+  # NOTE: blueprint only — the service itself must be created once on the
+  # Render dashboard, then set WHISPER_SERVER_URL on mentorai-backend to
+  # its public URL.
+  - type: web
+    name: mentorai-whisper
+    runtime: python
+    plan: free
+    rootDir: whisper-server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # Free tier has 512 MB RAM: whisper "tiny" fits, "small" OOMs.
+      - key: WHISPER_MODEL
+        value: tiny
+      # Only needed if ffmpeg is not on PATH in the Render image.
+      - key: FFMPEG_DIR
+        sync: false
