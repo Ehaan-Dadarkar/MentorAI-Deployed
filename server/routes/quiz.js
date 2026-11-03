@@ -8,6 +8,7 @@ const { callOpenRouter } = require("../services/ai");
 const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const Quiz = require("../models/Quiz");
+const VoiceSession = require("../models/VoiceSession");
 const User = require("../models/User");
 const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
@@ -30,7 +31,7 @@ function contentFingerprint(content) {
   return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-function buildCacheKey({ userId, subject, topic, difficulty, count, content }) {
+function buildCacheKey({ userId, subject, topic, difficulty, count, content, weakConcepts }) {
   return JSON.stringify({
     userId: userId == null ? null : String(userId),
     subject: normalizeSubject(subject).toLowerCase(),
@@ -38,6 +39,9 @@ function buildCacheKey({ userId, subject, topic, difficulty, count, content }) {
     difficulty,
     count,
     content: contentFingerprint(content),
+    // Weakness bias is part of the key: a quiz cached before new weak
+    // concepts appeared must not be served once they exist.
+    weakConcepts: Array.isArray(weakConcepts) ? [...weakConcepts].sort() : [],
   });
 }
 
@@ -114,7 +118,36 @@ function parseQuestionsFromModel(rawText) {
   throw new Error("Failed to parse quiz JSON array from model response");
 }
 
-function buildQuizPrompt({ subject, topic, count, difficulty, content, strict }) {
+async function getRecentWeakConcepts(userId) {
+  try {
+    const sessions = await VoiceSession.find({
+      userId,
+      completedAt: { $ne: null },
+    })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select("weakConcepts")
+      .lean();
+    const seen = new Set();
+    const out = [];
+    for (const session of sessions || []) {
+      for (const rawConcept of session.weakConcepts || []) {
+        const concept = String(rawConcept || "").trim();
+        const key = concept.toLowerCase();
+        if (concept && !seen.has(key)) {
+          seen.add(key);
+          out.push(concept);
+          if (out.length >= 10) return out;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+function buildQuizPrompt({ subject, topic, count, difficulty, content, strict, weakConcepts }) {
   const topicSuffix = topic ? ` specifically about ${topic}` : "";
   const strictLine = strict
     ? "Return ONLY a strict JSON array. Do not include markdown, headings, or commentary."
@@ -123,6 +156,10 @@ function buildQuizPrompt({ subject, topic, count, difficulty, content, strict })
   const sourceInstruction = hasContent
     ? "Use ONLY the provided study material as the knowledge source. Do not invent facts outside the source."
     : "Use accurate domain knowledge for the subject.";
+  const weaknessLine =
+    Array.isArray(weakConcepts) && weakConcepts.length > 0
+      ? `- The student recently struggled with these concepts: ${weakConcepts.join("; ")}. Weight roughly 40% of the questions toward these weak concepts (spread across difficulty levels); use the remaining questions to cover the requested topic.`
+      : "";
 
   return [
     {
@@ -133,8 +170,9 @@ Difficulty: ${difficulty}.
 Requirements:
 - Each question tests conceptual understanding, not just recall
 - Wrong options should be plausible, not obviously wrong
-- Explanations should teach, not just confirm the answer
+- Each explanation is 1-2 sentences: state why the correct answer is right (and briefly why the strongest distractor is wrong) - teach, don't just confirm
 - ${sourceInstruction}
+${weaknessLine}
 ${strictLine}
 Format:
 [
@@ -142,7 +180,7 @@ Format:
     "question": "string",
     "options": ["string", "string", "string", "string"],
     "correctIndex": 0,
-    "explanation": "string",
+    "explanation": "1-2 sentences explaining why the correct answer is right",
     "concept": "string"
   }
 ]`,
@@ -162,6 +200,7 @@ async function generateQuestionsWithRetry({
   count,
   difficulty,
   content,
+  weakConcepts,
   apiKey,
   onUsage,
 }) {
@@ -171,6 +210,7 @@ async function generateQuestionsWithRetry({
     count,
     difficulty,
     content,
+    weakConcepts,
     strict: false,
   });
 
@@ -184,6 +224,7 @@ async function generateQuestionsWithRetry({
       count,
       difficulty,
       content,
+      weakConcepts,
       strict: true,
     });
     const second = await callOpenRouter(secondPrompt, { temperature: 0.2, apiKey, onUsage });
@@ -377,6 +418,9 @@ router.post(
         createFlashcardDeck,
       } = req.body;
       const normalizedSubject = normalizeSubject(subject);
+      // Weak-concept bias is computed before the cache lookup so it is
+      // part of the cache key (see buildCacheKey).
+      const weakConcepts = await getRecentWeakConcepts(req.userId);
       const cacheKey = buildCacheKey({
         userId: req.userId,
         subject,
@@ -384,6 +428,7 @@ router.post(
         difficulty,
         count,
         content,
+        weakConcepts,
       });
 
       // Cache lookup runs BEFORE the credit gate (M1): a cache hit
@@ -400,6 +445,7 @@ router.post(
           count,
           difficulty,
           content,
+          weakConcepts,
           apiKey: access.apiKey,
           onUsage: usageCallbackFor(req.userId, "quiz"),
         });

@@ -8,6 +8,7 @@ const { callOpenRouter } = require("../services/openrouter");
 const { requireOpenRouterAccess, refundCreditSpend } = require("../services/openrouterAccess");
 const { usageCallbackFor } = require("../services/usage");
 const { calculateSM2 } = require("../services/sm2");
+const { buildApkg } = require("../services/ankiExport");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
 const StudySession = require("../models/StudySession");
@@ -334,6 +335,43 @@ router.get("/decks/:deckId/cards", auth, async (req, res, next) => {
     }).sort({ nextReview: 1 });
 
     res.json({ cards });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ── GET /api/flashcards/export/anki?deckId=<id> ─────────────
+//
+// Real Anki .apkg export ("card factory, not card prison"): builds a valid
+// collection.anki2 + media zip from the user's cards so the deck imports
+// into Anki Desktop as new cards. 404 when the deck does not belong to the
+// user or has no exportable cards. Exporting is not an AI request: no credits.
+
+router.get("/export/anki", auth, async (req, res, next) => {
+  try {
+    const { deckId } = req.query;
+    if (!deckId || !mongoose.Types.ObjectId.isValid(deckId)) {
+      return res.status(404).json({ error: "Deck not found" });
+    }
+    const deck = await Deck.findOne({ _id: deckId, userId: req.userId }).select("name");
+    if (!deck) return res.status(404).json({ error: "Deck not found" });
+
+    const cards = await Flashcard.find({ deckId: deck._id, userId: req.userId })
+      .select("question answer")
+      .sort({ createdAt: 1 });
+    const exportable = (cards || [])
+      .map((c) => ({ front: String(c.question || "").trim(), back: String(c.answer || "").trim() }))
+      .filter((c) => c.front && c.back);
+    if (exportable.length === 0) {
+      return res.status(404).json({ error: "Deck has no cards to export" });
+    }
+
+    const apkg = await buildApkg(deck.name, exportable);
+    // Sanitize for Content-Disposition: no quotes, backslashes or newlines.
+    const safeName = String(deck.name || "deck").replace(/["\\\r\n]/g, "").trim().slice(0, 80) || "deck";
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeName}-anki.apkg"`);
+    res.send(apkg);
   } catch (error) {
     next(error);
   }

@@ -96,5 +96,13 @@ noteSchema.pre("save", async function () {
 noteSchema.index({ userId: 1, isDeleted: 1 });
 noteSchema.index({ userId: 1, deleted: 1 });
 noteSchema.index({ userId: 1, subject: 1 });
+// Full-text search (slice 159): ranked, stemmed search over title,
+// content and tags. Powers /api/notes/search and the tutor's automatic
+// note retrieval. Weights: title > tags > content.
+noteSchema.index(
+  { title: "text", content: "text", tags: "text" },
+  { weights: { title: 10, tags: 5, content: 1 }, name: "note_text_search" },
+);
+
 
 module.exports = mongoose.model("Note", noteSchema);

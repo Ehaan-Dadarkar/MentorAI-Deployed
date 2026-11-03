@@ -87,7 +87,7 @@ function getDeckReviewRows(deck: Quiz): DeckReviewRow[] {
     return {
       question: question.question, options: question.options,
       correctIndex, selectedIndex, isCorrect: selectedIndex === correctIndex,
-      explanation: question.explanation || "No explanation provided.",
+      explanation: question.explanation || "",
       concept: question.topic || "General",
     };
   });
@@ -819,9 +819,11 @@ export default function QuizPage() {
                                         {row.options[row.correctIndex]}
                                       </div>
                                     )}
+                                    {row.explanation?.trim() ? (
                                     <p className="text-xs sm:text-sm text-[#8a8a8a] leading-relaxed italic border-l-2 border-[#262626] pl-4">
                                       {row.explanation}
                                     </p>
+                                    ) : null}
                                   </div>
                                 </motion.div>
                               )}
@@ -1033,9 +1035,11 @@ export default function QuizPage() {
                                   {row.options[row.correctIndex]}
                                 </div>
                               )}
+                              {row.explanation?.trim() ? (
                               <p className="text-xs sm:text-sm text-[#8a8a8a] leading-relaxed italic border-l-2 border-[#262626] pl-4">
                                 {row.explanation}
                               </p>
+                              ) : null}
                             </div>
                           </motion.div>
                         )}

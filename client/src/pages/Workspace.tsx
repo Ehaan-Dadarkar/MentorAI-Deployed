@@ -7,7 +7,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Plus, Upload, Trash2, Search, X } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import axios from "@/lib/axios";
 import { cn } from "@/lib/utils";
 import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 
@@ -114,6 +115,16 @@ const SecondaryButton = ({
 
 // ── Main Page ───────────────────────────────────────────────
 
+// Ranked full-text search result (slice 159).
+interface RankedNote {
+  _id: string;
+  title: string;
+  subject?: string;
+  snippet?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export default function Workspace() {
   const {
     notes, trashNotes, filters, activeNote, editorContent, isLoading, isSaving, isImportingPdf,
@@ -146,14 +157,37 @@ export default function Workspace() {
   // synchronous in zustand, so fetchWorkspaceData below reads the
   // new filter.
   const [searchDraft, setSearchDraft] = useState("");
+  // Ranked full-text search (slice 159): when the query is long enough,
+  // results come relevance-ordered with match snippets from
+  // GET /api/notes/search instead of the unranked list filter.
+  const [rankedNotes, setRankedNotes] = useState<RankedNote[] | null>(null);
+  const searchGenRef = useRef(0);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      const q = searchDraft.trim();
+      if (q.length >= 2) {
+        const gen = ++searchGenRef.current;
+        void (async () => {
+          try {
+            const res = await axios.get(`/notes/search?q=${encodeURIComponent(q)}`);
+            if (gen !== searchGenRef.current) return;
+            setRankedNotes(res.data.notes ?? []);
+          } catch (e) {
+            console.error(e);
+            if (gen === searchGenRef.current) setRankedNotes([]);
+          }
+        })();
+        return;
+      }
+      setRankedNotes(null);
       if (searchDraft === filters.search) return;
       setSearch(searchDraft);
       void fetchWorkspaceData();
     }, 300);
     return () => window.clearTimeout(timeout);
   }, [searchDraft, filters.search, setSearch, fetchWorkspaceData]);
+  const visibleNotes = rankedNotes ?? notes;
+  const isRankedSearch = rankedNotes !== null;
 
   // M11: save any unsaved edits of the current note. This also flushes
   // the 600 ms dirty debounce, so edits typed just before a note switch
@@ -317,6 +351,7 @@ export default function Workspace() {
   // then clear the query (replace) so a refresh does not create a
   // second note. handleCreateNote already guards demo users.
   const deepLinkNewAppliedRef = useRef(false);
+  const deepLinkGraphAppliedRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (deepLinkNewAppliedRef.current) return;
@@ -325,6 +360,23 @@ export default function Workspace() {
     setSearchParams({}, { replace: true });
     void handleCreateNote();
   }, [searchParams, setSearchParams, handleCreateNote]);
+
+  // Deep links from the knowledge graph (slice 159): ?note=<id> opens the
+  // note directly, ?search=<q> prefills ranked search. Applied once.
+  useEffect(() => {
+    if (deepLinkGraphAppliedRef.current) return;
+    const noteId = searchParams.get("note");
+    const q = searchParams.get("search");
+    if (!noteId && !q) return;
+    deepLinkGraphAppliedRef.current = true;
+    if (q) setSearchDraft(q);
+    setSearchParams({}, { replace: true });
+    if (noteId) {
+      void (async () => {
+        try { await loadNote(noteId); } catch (e) { console.error(e); }
+      })();
+    }
+  }, [searchParams, setSearchParams, loadNote]);
 
   const handleImportPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -353,6 +405,48 @@ export default function Workspace() {
       }
     } catch (err) { console.error(err); }
     finally { if (fileInputRef.current) fileInputRef.current.value = ""; }
+  };
+
+  const navigate = useNavigate();
+  // Study kit (slice 159): one click turns the active note into a flashcard
+  // deck + a quiz — the PDF → notes → decks → quiz chain as a single
+  // action. Two AI calls = two credits; the user opts in explicitly.
+  const [studyKitState, setStudyKitState] = useState<"idle" | "working" | "done" | "error">("idle");
+  const [studyKitLinks, setStudyKitLinks] = useState<{ deckId: string; quizId: string } | null>(null);
+
+  const stripHtml = (html: string): string =>
+    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  const handleStudyKit = async () => {
+    if (!activeNote || studyKitState === "working") return;
+    if (await guardOpenRouterAction()) return;
+    await saveDirtyEdits();
+    const text = stripHtml(editorContent || activeNote.content || "").slice(0, 12000);
+    if (text.length < 50) return;
+    setStudyKitState("working");
+    setStudyKitLinks(null);
+    try {
+      const subject = activeNote.subject || "General";
+      const deckRes = await axios.post("/flashcards/generate", {
+        text,
+        subject,
+      });
+      const quizRes = await axios.post("/quiz/generate", {
+        subject,
+        topic: activeNote.title || "Note quiz",
+        count: 10,
+        difficulty: "medium",
+        content: text,
+      });
+      const deckId = deckRes.data?.deck?._id;
+      const quizId = quizRes.data?.quiz?._id;
+      if (!deckId || !quizId) throw new Error("study kit incomplete");
+      setStudyKitLinks({ deckId, quizId });
+      setStudyKitState("done");
+    } catch (e) {
+      console.error(e);
+      setStudyKitState("error");
+    }
   };
 
   const handleSelectNote = async (noteId: string) => {
@@ -555,17 +649,17 @@ export default function Workspace() {
                       LOADING...
                     </p>
                   </div>
-                ) : notes.length === 0 ? (
+                ) : visibleNotes.length === 0 ? (
                   <div className="border border-[#262626] p-8 sm:p-16 flex flex-col items-center text-center">
                     <h3 className="text-3xl sm:text-4xl font-bold tracking-tighter mb-4 text-[#FAFAFA]">
-                      {filters.search || filters.subject ? "NO MATCHES." : "VOID."}
+                      {filters.search || filters.subject || isRankedSearch ? "NO MATCHES." : "VOID."}
                     </h3>
                     <p className="text-xs sm:text-sm font-bold tracking-[0.2em] text-[#8a8a8a] uppercase mb-8 max-w-sm">
-                      {filters.search || filters.subject
+                      {filters.search || filters.subject || isRankedSearch
                         ? "NO NOTES MATCH YOUR SEARCH OR FILTER. CLEAR THEM TO SEE EVERYTHING."
                         : "YOUR WORKSPACE IS EMPTY. CREATE A NOTE OR IMPORT A PDF TO BEGIN."}
                     </p>
-                    {filters.search || filters.subject ? (
+                    {filters.search || filters.subject || isRankedSearch ? (
                       <PrimaryButton onClick={handleClearFilters}>
                         CLEAR FILTERS <ArrowRight className="w-4 h-4 ml-1" />
                       </PrimaryButton>
@@ -583,7 +677,7 @@ export default function Workspace() {
                     // ↓ 1-col mobile, 2-col sm, 3-col lg
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 border-t border-l border-[#262626]"
                   >
-                    {notes.map((note) => (
+                    {visibleNotes.map((note) => (
                       <motion.div
                         key={note._id}
                         variants={fadeUp}
@@ -602,6 +696,11 @@ export default function Workspace() {
                             <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-4 group-hover:text-[#0A0A0A] line-clamp-3">
                               {note.title || "UNTITLED NOTE"}
                             </h3>
+                            {isRankedSearch && (note as RankedNote).snippet && (
+                              <p className="text-xs font-mono text-[#8a8a8a] group-hover:text-[#0A0A0A] line-clamp-3 mb-4 opacity-80">
+                                {(note as RankedNote).snippet}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center justify-between mt-6 sm:mt-8">
                             <span className="text-label font-bold tracking-[0.2em] uppercase border border-current px-2 sm:px-3 py-1 opacity-50 group-hover:opacity-100">
@@ -751,6 +850,18 @@ export default function Workspace() {
                       title="Unsaved changes"
                     />
                   )}
+                  {!isDemoNote && activeNote && (
+                    <GhostButton
+                      onClick={handleStudyKit}
+                      disabled={studyKitState === "working"}
+                      className="px-2 sm:px-4"
+                      title="GENERATE FLASHCARDS + QUIZ FROM THIS NOTE"
+                    >
+                      <span className="text-label font-bold tracking-widest uppercase">
+                        {studyKitState === "working" ? "BUILDING..." : "STUDY KIT"}
+                      </span>
+                    </GhostButton>
+                  )}
                   {!isDemoNote && (
                     <GhostButton
                       onClick={handleMoveToTrash}
@@ -767,6 +878,32 @@ export default function Workspace() {
                   <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D00] shrink-0" />
                   <p className="text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
                     DEMO NOTE — READ ONLY. REGISTER A FREE ACCOUNT TO CREATE AND EDIT YOUR OWN NOTES.
+                  </p>
+                </div>
+              )}
+
+              {studyKitState === "done" && studyKitLinks && (
+                <div className="border border-[#00E676]/40 bg-[#00E676]/5 px-4 py-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                  <p className="text-label font-bold tracking-[0.16em] text-[#00E676] uppercase flex-1">
+                    STUDY KIT READY — DECK + QUIZ CREATED.
+                  </p>
+                  <div className="flex gap-3">
+                    <PrimaryButton
+                      onClick={() => navigate(`/flashcards/${studyKitLinks.deckId}/study`)}
+                      className="py-2 px-4 text-label"
+                    >
+                      STUDY DECK <ArrowRight className="w-3 h-3 ml-1" />
+                    </PrimaryButton>
+                    <SecondaryButton onClick={() => navigate("/quiz")} className="py-2 px-4 text-label">
+                      QUIZZES
+                    </SecondaryButton>
+                  </div>
+                </div>
+              )}
+              {studyKitState === "error" && (
+                <div className="border border-[#FF3D00]/40 bg-[#FF3D00]/5 px-4 py-3 mb-6">
+                  <p className="text-label font-bold tracking-[0.16em] text-[#FF3D00] uppercase">
+                    STUDY KIT FAILED — TRY AGAIN.
                   </p>
                 </div>
               )}

@@ -16,6 +16,8 @@ const StudySession = require("../models/StudySession");
 const Deck = require("../models/Deck");
 const Flashcard = require("../models/Flashcard");
 const Note = require("../models/Note");
+const VoiceSession = require("../models/VoiceSession");
+const notesRoutes = require("./notes");
 const TutorSessionSummary = require("../models/TutorSessionSummary");
 
 const router = express.Router();
@@ -67,7 +69,63 @@ const sessionNotesSchema = z.object({
 // TUTOR SYSTEM PROMPTS
 // ══════════════════════════════════════════════════════════════
 
-function buildTutorSystemPrompt(context, noteContext, mode) {
+
+// Automatic note retrieval (slice 159): the student no longer has to
+// hand-pick relevant notes. The latest user message is keyword-matched
+// against their notes via the text index; the top passages are returned
+// formatted for prompt injection. Never throws — returns "".
+async function buildAutoNoteContext(userId, messages) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.content);
+  if (!lastUser) return "";
+  let passages = [];
+  try {
+    passages = await notesRoutes.retrieveNotePassages(userId, lastUser.content, 3);
+  } catch (e) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("auto note retrieval failed:", e.message);
+    }
+    return "";
+  }
+  if (!passages.length) return "";
+  return passages
+    .map((p) => `=== NOTE: ${p.title} ===\n${p.passage}\n=== END NOTE ===`)
+    .join("\n\n");
+}
+
+// Recent weak concepts from voice-recall evaluations (slice 159), so the
+// tutor can proactively drill what the student got wrong. Never throws.
+async function getRecentWeakConcepts(userId, limit = 8) {
+  try {
+    const sessions = await VoiceSession.find({ userId })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select("weakConcepts")
+      .lean();
+    const seen = new Set();
+    const out = [];
+    for (const s of sessions) {
+      for (const c of s.weakConcepts || []) {
+        const t = String(c).trim();
+        if (t && !seen.has(t.toLowerCase())) {
+          seen.add(t.toLowerCase());
+          out.push(t);
+        }
+        if (out.length >= limit) return out;
+      }
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
+}
+
+// One line for the system prompt; empty when there is nothing to report.
+function weakConceptsLine(weakConcepts) {
+  if (!weakConcepts || !weakConcepts.length) return "";
+  return `Known weak areas for this student (probe these when relevant, do not lecture): ${weakConcepts.join("; ")}`;
+}
+
+function buildTutorSystemPrompt(context, noteContext, mode, weakConcepts) {
   if (mode === "socratic") {
     return [
       "You are a tutor who teaches by asking questions.",
@@ -93,6 +151,7 @@ function buildTutorSystemPrompt(context, noteContext, mode) {
       noteContext
         ? `Student notes (reference if helpful):\n${noteContext.slice(0, 3000)}`
         : "",
+      weakConceptsLine(weakConcepts),
     ]
       .filter(Boolean)
       .join("\n");
@@ -132,6 +191,7 @@ function buildTutorSystemPrompt(context, noteContext, mode) {
     "",
     context ? `Topic: ${context}` : "",
     noteContext ? `Student notes:\n${noteContext.slice(0, 3000)}` : "",
+    weakConceptsLine(weakConcepts),
   ]
     .filter(Boolean)
     .join("\n");
@@ -243,9 +303,18 @@ router.post(
       );
       const mode = req.body.mode || "explain";
 
+      // Slice 159: automatic retrieval + weak-concept awareness. A manually
+      // selected noteContext (explicit user intent) is kept first; auto
+      // passages supplement it. Retrieval is a local Mongo text search —
+      // no AI call, no credit burn.
+      const autoNoteContext = await buildAutoNoteContext(req.userId, messages);
+      const combinedNoteContext =
+        [noteContext, autoNoteContext].filter(Boolean).join("\n\n") || undefined;
+      const weakConcepts = await getRecentWeakConcepts(req.userId);
+
       const systemPrompt = {
         role: "system",
-        content: buildTutorSystemPrompt(context, noteContext, mode),
+        content: buildTutorSystemPrompt(context, combinedNoteContext, mode, weakConcepts),
       };
 
       const trimmedMessages = messages.slice(-10);
@@ -786,4 +855,9 @@ router.post(
 router.chatSchema = chatSchema;
 router.shouldRefundStreamSpend = shouldRefundStreamSpend;
 
+
+// Slice 159 test hooks.
+router.buildAutoNoteContext = buildAutoNoteContext;
+router.getRecentWeakConcepts = getRecentWeakConcepts;
+router.weakConceptsLine = weakConceptsLine;
 module.exports = router;

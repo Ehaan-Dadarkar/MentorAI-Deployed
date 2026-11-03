@@ -172,6 +172,14 @@ function diamondPath(size: number): string {
   return `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
 }
 
+// Resource node ids encode their kind: "quiz:<quizId>:note:<noteId>",
+// "flashcard:<deckId>:note:<noteId>", "voice:<sessionId>:note:<noteId>".
+// Parses them for deep-link actions (slice 159).
+function parseResourceId(id: string): { kind: string; resourceId: string } | null {
+  const m = id.match(/^(quiz|flashcard|voice):([^:]+):note:/);
+  return m ? { kind: m[1], resourceId: m[2] } : null;
+}
+
 function getNodeTypeLabel(type: KnowledgeGraphNodeType): string {
   if (type === "note") return "NOTE";
   if (type === "concept") return "CONCEPT";
@@ -595,6 +603,14 @@ export default function KnowledgeGraph() {
 
           {selectedNode.type === "note" && (
             <div className="space-y-8 sm:space-y-10">
+              <div>
+                <PrimaryButton
+                  onClick={() => navigate(`/workspace?note=${selectedNode.id}`)}
+                  className="w-full justify-center"
+                >
+                  OPEN NOTE <ArrowRight className="w-4 h-4 ml-1" />
+                </PrimaryButton>
+              </div>
               {selectedNoteResources.length > 0 && (
                 <div className="space-y-4">
                   <span className="text-label font-bold tracking-[0.2em] text-[#8a8a8a] uppercase block border-b border-[#262626] pb-2">
@@ -681,12 +697,18 @@ export default function KnowledgeGraph() {
                 </div>
               )}
 
-              <div className="pt-4">
+              <div className="pt-4 flex flex-col gap-3">
                 <SecondaryButton
                   onClick={() => navigate(`/tutor?topic=${encodeURIComponent(selectedNode.label)}`)}
                   className="w-full"
                 >
                   STUDY CONCEPT <ArrowRight className="w-4 h-4 ml-1" />
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => navigate(`/workspace?search=${encodeURIComponent(selectedNode.label)}`)}
+                  className="w-full"
+                >
+                  SEARCH NOTES <ArrowRight className="w-4 h-4 ml-1" />
                 </SecondaryButton>
               </div>
             </div>
@@ -715,6 +737,20 @@ export default function KnowledgeGraph() {
               </div>
 
               <div className="flex flex-col gap-3 sm:gap-4">
+                {(() => {
+                  const parsed = parseResourceId(selectedNode.id);
+                  if (parsed?.kind === "flashcard") {
+                    return (
+                      <PrimaryButton
+                        onClick={() => navigate(`/flashcards/${parsed.resourceId}/study`)}
+                        className="w-full justify-center"
+                      >
+                        STUDY DECK <ArrowRight className="w-4 h-4 ml-1" />
+                      </PrimaryButton>
+                    );
+                  }
+                  return null;
+                })()}
                 <PrimaryButton
                   onClick={() => navigate(`/tutor?topic=${encodeURIComponent(selectedNode.subject)}`)}
                   className="w-full justify-center"

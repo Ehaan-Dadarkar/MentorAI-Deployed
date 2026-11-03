@@ -74,6 +74,59 @@ function buildNotesListFilter({ userId, deletedFlag, subject, search }) {
 router.escapeRegExp = escapeRegExp;
 router.buildNotesListFilter = buildNotesListFilter;
 
+// Snippet extraction (slice 159): ~600-char window around the first query
+// term hit, so ranked results and tutor prompts show the relevant passage
+// instead of the note's opening paragraph.
+function extractSnippet(content, query, radius = 300) {
+  const text = String(content || "");
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  const terms = String(query || "").toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  let idx = -1;
+  for (const t of terms) {
+    const i = lower.indexOf(t);
+    if (i !== -1 && (idx === -1 || i < idx)) idx = i;
+  }
+  if (idx === -1) return text.slice(0, radius * 2).trim();
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(text.length, idx + radius);
+  return (start > 0 ? "…" : "") + text.slice(start, end).trim() + (end < text.length ? "…" : "");
+}
+
+// Strip Mongo $text operator syntax from a user query so quotes can't
+// change the search semantics (they're phrase operators in $text).
+function sanitizeTextQuery(q) {
+  return String(q || "").replace(/["']/g, "").trim();
+}
+
+// Ranked passage retrieval over a user's notes (slice 159). Uses the
+// note_text_search index (stemmed, weighted title > tags > content).
+// Shared by GET /api/notes/search and the tutor's automatic context.
+// Never throws for a bad query — returns [].
+async function retrieveNotePassages(userId, query, maxPassages = 3) {
+  const q = sanitizeTextQuery(query);
+  if (q.length < 3) return [];
+  const notes = await Note.find(
+    { userId, $text: { $search: q } },
+    { score: { $meta: "textScore" } },
+  )
+    .sort({ score: { $meta: "textScore" } })
+    .limit(maxPassages)
+    .select("title content")
+    .maxTimeMS(5000)
+    .lean();
+  return notes.map((n) => ({
+    noteId: String(n._id),
+    title: n.title,
+    passage: extractSnippet(n.content || "", q),
+    score: n.score,
+  }));
+}
+
+router.retrieveNotePassages = retrieveNotePassages;
+router.extractSnippet = extractSnippet;
+router.sanitizeTextQuery = sanitizeTextQuery;
+
 // GET /api/notes
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -92,6 +145,42 @@ router.get("/", auth, async (req, res, next) => {
       .maxTimeMS(5000);
 
     res.json({ notes });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+// GET /api/notes/search?q=... — ranked full-text search (slice 159).
+// Unlike the list's `search` param (unranked regex over title/content/tags),
+// this uses the note_text_search index: stemmed, weighted, ordered by
+// relevance, with a match snippet per note. Must stay above /:id.
+router.get("/search", auth, async (req, res, next) => {
+  try {
+    const q = sanitizeTextQuery(req.query.q);
+    if (q.length < 2) return res.json({ notes: [] });
+    const notes = await Note.find(
+      { userId: req.userId, $text: { $search: q } },
+      { score: { $meta: "textScore" } },
+    )
+      .sort({ score: { $meta: "textScore" } })
+      .limit(10)
+      .select("title subject tags sourceType summary createdAt updatedAt content")
+      .maxTimeMS(5000)
+      .lean();
+    res.json({
+      notes: notes.map((n) => ({
+        _id: String(n._id),
+        title: n.title,
+        subject: n.subject,
+        tags: n.tags,
+        sourceType: n.sourceType,
+        summary: n.summary,
+        updatedAt: n.updatedAt,
+        snippet: extractSnippet(n.content || "", q),
+        score: n.score,
+      })),
+    });
   } catch (error) {
     next(error);
   }
