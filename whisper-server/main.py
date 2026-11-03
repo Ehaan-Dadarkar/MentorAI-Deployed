@@ -1,6 +1,8 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 import whisper
+import numpy as np
+import wave
 import tempfile
 import os
 import shutil
@@ -45,6 +47,50 @@ def health():
         "device": "cpu",
         "cuda_available": False
     }
+
+@app.post("/transcribe-chunk")
+async def transcribe_chunk(request: Request, seq: int = 0, prompt: str = ""):
+    """Streaming chunk endpoint (slice 55): the client POSTs raw 16 kHz mono
+    int16 PCM while the user is still speaking; each chunk is transcribed
+    immediately so the transcript builds live instead of waiting for the
+    whole recording. `prompt` carries the previous chunk's tail as whisper
+    initial-prompt context for continuity across chunk boundaries."""
+    wav_path = None
+    try:
+        data = await request.body()
+        if not data or len(data) > 400_000:
+            return {"success": False, "transcript": "", "seq": seq,
+                    "error": "empty or oversized chunk"}
+        pcm = np.frombuffer(data, dtype=np.int16)
+        if pcm.size < 1600:  # < 0.1 s of audio — nothing to transcribe
+            return {"success": True, "transcript": "", "seq": seq}
+        # Write a WAV header around the PCM so whisper's loader takes the
+        # same code path as the whole-file endpoint (no new API surface).
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".chunk.wav") as tmp:
+            wav_path = tmp.name
+        with wave.open(wav_path, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(16000)
+            w.writeframes(data)
+        clean_prompt = (prompt or "").strip() or None
+        result = MODEL.transcribe(
+            wav_path,
+            language="en",
+            fp16=False,
+            temperature=0.2,
+            condition_on_previous_text=False,
+            no_speech_threshold=0.6,
+            initial_prompt=clean_prompt,
+        )
+        return {"success": True, "transcript": result["text"].strip(), "seq": seq}
+    except Exception as e:
+        print(f"Chunk transcription error: {e}")
+        return {"success": False, "transcript": "", "seq": seq, "error": str(e)}
+    finally:
+        if wav_path and os.path.exists(wav_path):
+            os.remove(wav_path)
+
 
 @app.post("/transcribe")
 async def transcribe(

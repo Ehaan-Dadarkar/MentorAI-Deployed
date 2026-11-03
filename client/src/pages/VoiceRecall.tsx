@@ -8,6 +8,7 @@ import axios from "@/lib/axios";
 import { guardOpenRouterAction } from "@/lib/apiKeyGate";
 import { cn } from "@/lib/utils";
 import { useVoiceRecallStore } from "@/store/voiceRecallStore";
+import { mergeChunkTranscript, promptTail } from "@/lib/streamingTranscribe";
 import { useRateLimitStore } from "@/store/rateLimitStore";
 
 // ── Animation Config ────────────────────────────────────────
@@ -420,6 +421,168 @@ function SessionScreen() {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Streaming capture (slice 55): AudioWorklet PCM pipeline. While active,
+  // 4 s audio windows are transcribed as the user speaks and stitched live;
+  // when unavailable, the legacy MediaRecorder whole-file flow is used.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const streamingRef = useRef(false);
+  const streamChainRef = useRef<Promise<void>>(Promise.resolve());
+  const accumRef = useRef("");
+  const doneRef = useRef(false);
+  const [micLevel, setMicLevel] = useState(0);
+
+  const cleanupStreamingCapture = () => {
+    if (!streamingRef.current && !audioCtxRef.current) return;
+    try { workletNodeRef.current?.port.postMessage("stop"); } catch { /* noop */ }
+    try { workletNodeRef.current?.disconnect(); } catch { /* noop */ }
+    try { sourceNodeRef.current?.disconnect(); } catch { /* noop */ }
+    if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => undefined); }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    audioCtxRef.current = null;
+    workletNodeRef.current = null;
+    sourceNodeRef.current = null;
+    streamRef.current = null;
+    streamingRef.current = false;
+    setMicLevel(0);
+  };
+
+  const handleWorkletMessage = (e: MessageEvent) => {
+    const msg = e.data as {
+      type: string; rms?: number; seq?: number; pcm?: ArrayBuffer; final?: boolean;
+    };
+    if (msg.type === "level") {
+      setMicLevel(msg.rms ?? 0);
+      return;
+    }
+    if (msg.type === "done") {
+      doneRef.current = true;
+      return;
+    }
+    if (msg.type === "chunk" && msg.pcm != null && msg.seq != null) {
+      const { seq, pcm, final: isFinal } = msg;
+      streamChainRef.current = streamChainRef.current
+        .then(() => uploadChunk(seq, pcm))
+        .catch((err) => console.error("Chunk upload failed:", err))
+        .then(() => { if (isFinal) doneRef.current = true; });
+    }
+  };
+
+  const uploadChunk = async (seq: number, pcm: ArrayBuffer) => {
+    const prompt = promptTail(accumRef.current);
+    const response = await axios.post(
+      `/voice/transcribe/chunk?seq=${seq}&prompt=${encodeURIComponent(prompt)}`,
+      pcm,
+      {
+        headers: { "Content-Type": "application/octet-stream" },
+        timeout: 60000,
+      },
+    );
+    const text = (response.data?.transcript as string | undefined)?.trim();
+    if (response.data?.success && text) {
+      accumRef.current = mergeChunkTranscript(accumRef.current, text);
+      setTranscript(accumRef.current);
+    }
+  };
+
+  const startStreamingCapture = async (stream: MediaStream): Promise<boolean> => {
+    try {
+      const AC = window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return false;
+      // 16 kHz mono: exactly what /transcribe-chunk expects, so no
+      // resampling is needed anywhere in the pipeline.
+      const ctx = new AC({ sampleRate: 16000 });
+      await ctx.audioWorklet.addModule("/whisper-capture.worklet.js");
+      const src = ctx.createMediaStreamSource(stream);
+      const node = new AudioWorkletNode(ctx, "whisper-capture");
+      node.port.onmessage = handleWorkletMessage;
+      src.connect(node);
+      audioCtxRef.current = ctx;
+      workletNodeRef.current = node;
+      sourceNodeRef.current = src;
+      streamingRef.current = true;
+      return true;
+    } catch (e) {
+      console.warn("Streaming capture unavailable, falling back to MediaRecorder:", e);
+      return false;
+    }
+  };
+
+  const startLegacyRecording = (stream: MediaStream) => {
+    audioChunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus" : "audio/webm";
+    const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
+    mediaRecorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+    recorder.start(100);
+  };
+
+  const stopLegacyRecording = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
+    setIsRecording(false); setIsTranscribing(true);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaRecorderRef.current.stop();
+    await new Promise<void>((resolve) => { mediaRecorderRef.current!.onstop = () => resolve(); });
+    try {
+      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      if (blob.size < 1000) { setTranscriptionError("RECORDING TOO SHORT — TRY RECORDING AGAIN"); setIsTranscribing(false); return; }
+      const formData = new FormData();
+      formData.append("audio", blob, "recording.webm");
+      const store = useVoiceRecallStore.getState();
+      const note = store.notes.find((n) => n._id === store.selectedNoteId);
+      if (note?.subject) formData.append("subject", note.subject);
+      const response = await axios.post("/voice/transcribe", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (response.data.success === false) {
+        setTranscriptionError("TRANSCRIPTION FAILED — TRY RECORDING AGAIN");
+      } else if (response.data.transcript) {
+        setTranscriptionError(null);
+        setTranscript(response.data.transcript);
+      }
+    } catch (err) {
+      console.error("Transcription error:", err);
+      const status = (err as { response?: { status?: number } }).response?.status;
+      setTranscriptionError(
+        status === 429
+          ? "TOO MANY TRANSCRIPTION REQUESTS — TRY AGAIN LATER"
+          : "TRANSCRIPTION FAILED — TRY RECORDING AGAIN",
+      );
+    }
+    finally { setIsTranscribing(false); }
+  };
+
+  const stopStreamingCapture = async () => {
+    setIsRecording(false);
+    setIsTranscribing(true);
+    try {
+      workletNodeRef.current?.port.postMessage("flush");
+      // The worklet posts "done" after the final chunk is enqueued, so
+      // draining the chain afterwards covers every chunk.
+      const deadline = Date.now() + 5000;
+      while (!doneRef.current && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      await streamChainRef.current;
+      const finalText = accumRef.current.trim();
+      if (!finalText) {
+        setTranscriptionError("RECORDING TOO SHORT — TRY RECORDING AGAIN");
+      } else {
+        setTranscriptionError(null);
+        setTranscript(finalText);
+      }
+    } catch (err) {
+      console.error("Streaming stop error:", err);
+      setTranscriptionError("TRANSCRIPTION FAILED — TRY RECORDING AGAIN");
+    } finally {
+      cleanupStreamingCapture();
+      setIsTranscribing(false);
+    }
+  };
+
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_TIME_LIMIT);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasAutoSubmitted = useRef(false);
@@ -430,6 +593,7 @@ function SessionScreen() {
   // leaving the page mid-recording does not leave the mic stream live.
   useEffect(() => {
     return () => {
+      cleanupStreamingCapture();
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") {
         try { recorder.stop(); } catch { /* already stopped */ }
@@ -442,6 +606,7 @@ function SessionScreen() {
   }, []);
 
   useEffect(() => {
+    cleanupStreamingCapture();
     // A recording left running across a question change (e.g. the timer
     // auto-submitting) must not stay live while the UI claims it stopped.
     const recorder = mediaRecorderRef.current;
@@ -485,18 +650,28 @@ function SessionScreen() {
   const startRecording = async () => {
     try {
       setMicError(null);
-      audioChunksRef.current = [];
+      setTranscript(""); setEditedTranscript(""); setTranscriptionError(null);
+      setMicLevel(0);
+      accumRef.current = "";
+      doneRef.current = false;
+      streamChainRef.current = Promise.resolve();
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        },
       });
       streamRef.current = stream;
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus" : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
-      mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      recorder.start(100);
-      setIsRecording(true); setTranscript(""); setEditedTranscript(""); setTranscriptionError(null);
+      // Prefer the streaming worklet pipeline (live transcript); fall back
+      // to the legacy MediaRecorder whole-file flow where AudioWorklet is
+      // unavailable.
+      if (!(await startStreamingCapture(stream))) {
+        startLegacyRecording(stream);
+      }
+      setIsRecording(true);
     } catch (err) {
       console.error("Mic error:", err);
       // A stream opened before the failure (e.g. MediaRecorder
@@ -520,43 +695,22 @@ function SessionScreen() {
   };
 
   const stopRecording = async () => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
-    setIsRecording(false); setIsTranscribing(true);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    mediaRecorderRef.current.stop();
-    await new Promise<void>((resolve) => { mediaRecorderRef.current!.onstop = () => resolve(); });
-    try {
-      const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      if (blob.size < 1000) { setTranscriptionError("RECORDING TOO SHORT — TRY RECORDING AGAIN"); setIsTranscribing(false); return; }
-      const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
-      const store = useVoiceRecallStore.getState();
-      const note = store.notes.find((n) => n._id === store.selectedNoteId);
-      if (note?.subject) formData.append("subject", note.subject);
-      const response = await axios.post("/voice/transcribe", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      if (response.data.success === false) {
-        setTranscriptionError("TRANSCRIPTION FAILED — TRY RECORDING AGAIN");
-      } else if (response.data.transcript) {
-        setTranscriptionError(null);
-        setTranscript(response.data.transcript);
-      }
-    } catch (err) {
-      console.error("Transcription error:", err);
-      const status = (err as { response?: { status?: number } }).response?.status;
-      setTranscriptionError(
-        status === 429
-          ? "TOO MANY TRANSCRIPTION REQUESTS — TRY AGAIN LATER"
-          : "TRANSCRIPTION FAILED — TRY RECORDING AGAIN",
-      );
+    if (streamingRef.current) {
+      await stopStreamingCapture();
+      return;
     }
-    finally { setIsTranscribing(false); }
+    await stopLegacyRecording();
   };
 
   const toggleRecording = () => { if (isRecording) stopRecording(); else startRecording(); };
 
   const stopRecordingIfActive = () => {
+    if (streamingRef.current) {
+      try { workletNodeRef.current?.port.postMessage("stop"); } catch { /* already stopped */ }
+      cleanupStreamingCapture();
+      setIsRecording(false); setIsTranscribing(false);
+      return;
+    }
     if (isRecording) {
       // Stop the recorder first: stopping only the tracks leaves the
       // recorder running (the audit's leak) and drops the recording.
@@ -726,6 +880,15 @@ function SessionScreen() {
             />
           )}
         </AnimatePresence>
+        {/* Live mic level (streaming capture only): green in range, red on clipping */}
+        {isRecording && (
+          <div className="h-[3px] w-full bg-[#161616]" aria-hidden>
+            <div
+              className={`h-full transition-[width] duration-100 ${micLevel > 0.65 ? "bg-[#FF3D00]" : "bg-[#00E676]"}`}
+              style={{ width: `${Math.min(100, micLevel * 350)}%` }}
+            />
+          </div>
+        )}
 
         <div className="border-t border-[#262626] bg-[#0A0A0A]/95 backdrop-blur-md">
           <div className="max-w-4xl mx-auto px-4 sm:px-8">
