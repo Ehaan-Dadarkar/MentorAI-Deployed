@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, AlertTriangle, Plus, X, ArrowRight } from "lucide-react";
+import axios from "@/lib/axios";
+import { ArrowLeft, AlertTriangle, Plus, X, ArrowRight,
+  Download,
+} from "lucide-react";
 import { useFlashcardStore } from "@/store/flashcardStore";
 import { cn } from "@/lib/utils";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -295,6 +298,40 @@ export default function FlashcardDeckDetail() {
   } = useFlashcardStore();
 
   const [showAddCard, setShowAddCard] = useState(false);
+  // Anki export (slice 161b): downloads the deck as a real .apkg via the
+  // export endpoint; blob download keeps the user on the page.
+  const [exportingAnki, setExportingAnki] = useState(false);
+  const [ankiError, setAnkiError] = useState<string | null>(null);
+
+  const handleExportAnki = async () => {
+    if (exportingAnki || !deckId) return;
+    setExportingAnki(true);
+    setAnkiError(null);
+    try {
+      const res = await axios.get(`/flashcards/export/anki?deckId=${deckId}`, {
+        responseType: "blob",
+      });
+      const contentType = String(res.headers?.["content-type"] || "");
+      if (contentType.includes("json")) throw new Error("export rejected");
+      const blob = new Blob([res.data], { type: "application/octet-stream" });
+      if (blob.size === 0) throw new Error("empty export");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName =
+        String(currentDeck?.name || "deck").replace(/[^\w\- ]+/g, "").trim() || "deck";
+      a.download = `${safeName}-anki.apkg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      setAnkiError("EXPORT FAILED — TRY AGAIN");
+    } finally {
+      setExportingAnki(false);
+    }
+  };
 
   useEffect(() => {
     if (!deckId) return;
@@ -405,6 +442,21 @@ export default function FlashcardDeckDetail() {
                 <span className="hidden sm:inline">CREATE CARD</span>
                 <span className="sm:hidden">ADD</span>
               </GhostButton>
+              <GhostButton
+                onClick={handleExportAnki}
+                disabled={exportingAnki || cards.length === 0}
+                className="flex-1 sm:flex-none justify-center sm:justify-start"
+                title="DOWNLOAD THIS DECK AS AN ANKI .APKG FILE"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">{exportingAnki ? "EXPORTING..." : "EXPORT ANKI"}</span>
+                <span className="sm:hidden">{exportingAnki ? "..." : "ANKI"}</span>
+              </GhostButton>
+              {ankiError && (
+                <p className="text-label font-bold tracking-widest text-[#FF3D00] uppercase">
+                  {ankiError}
+                </p>
+              )}
             </motion.div>
           </motion.div>
         </div>
